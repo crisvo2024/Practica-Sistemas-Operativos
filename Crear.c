@@ -18,10 +18,10 @@ int PolyHash (char cadena[]);
 int main(int argc, char const *argv[])
 {
     FILE *myf, *nombres, *razas;
-    struct Dog lista[10000000];
+    struct Dog *lista=malloc(sizeof(struct Dog));
     nombres=fopen("Nombres.txt","r");
     razas=fopen("razas.txt","r");
-    myf = fopen("dataDogs.dat","wb");
+    
     char arr_nombres[1717][32];
     char arr_razas[242][16];
  
@@ -41,27 +41,29 @@ int main(int argc, char const *argv[])
     fclose(razas);
     for (size_t i = 0; i < 10000000; i++)
     {
+        myf = fopen("dataDogs.dat","ab");
         int num=rand() %1717;
-        strcpy(lista[i].nombre,arr_nombres[num]);
+        strcpy(lista->nombre,arr_nombres[num]);
         num=rand() %242;
-        strcpy(lista[i].raza,arr_razas[num]);
-        strcpy(lista[i].tipo,"Perro");
+        strcpy(lista->raza,arr_razas[num]);
+        strcpy(lista->tipo,"Perro");
         num=rand() %20;
-        lista[i].edad=num;
+        lista->edad=num;
         num=rand() %70;
-        lista[i].estatura=num;
+        lista->estatura=num;
         num=rand() %85;
-        lista[i].peso=num;
+        lista->peso=num;
         num= rand()%2;
         if(num==1){
-            lista[i].sexo='M';
+            lista->sexo='M';
         }else{
-            lista[i].sexo='H';
+            lista->sexo='H';
         }
-        lista[i].hash=PolyHash(lista[i].nombre);
-
+        lista->hash=PolyHash(lista->nombre);
+        fwrite(&lista,sizeof(struct Dog),1,myf);
+        fclose(myf);  
     }
-    
+    /*
     for (size_t i = 0; i < 10; i++)
     {
         printf("Nombre: %s\n",lista[i].nombre);
@@ -73,12 +75,12 @@ int main(int argc, char const *argv[])
         printf("Sexo: %c \n", lista[i].sexo);
         printf("Hash: %d \n", lista[i].hash);
         
-    }
+    }*/
     
-    fwrite(&lista,sizeof(struct Dog),10000000,myf);
+    
       
     
-    fclose(myf);                 
+                   
     return 0;
 }
 int PolyHash (char cadena[])
