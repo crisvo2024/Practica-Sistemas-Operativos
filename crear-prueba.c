@@ -33,35 +33,35 @@ int main(int argc, char const *argv[])
     //Lee línea a línea y escribe en pantalla hasta el fin de fichero
     for (size_t i = 0; i < 1717; i++)
     {
-        memset(arr_nombres[i],0,32);
-        fgets(arr_nombres[i], 32, (FILE*) nombres);
+        memset(arr_nombres[i],'\0',32);
+        fgets(arr_nombres[i], 31, (FILE*) nombres);
     }
     
     fclose(nombres);
     for(size_t i = 0; i < 242; i++)
     {
         memset(arr_razas[i],'\0',16);
-        fgets(arr_razas[i], 16, (FILE*) razas);
+        fgets(arr_razas[i], 15, (FILE*) razas);
     }
     
     fclose(razas);
     for(size_t i = 0; i < 56; i++)
     {
         memset(arr_razasgato[i],'\0',16);
-        fgets(arr_razasgato[i], 16, (FILE*) razasgato);
+        fgets(arr_razasgato[i], 15, (FILE*) razasgato);
     }
     
     fclose(razasgato);
     for(size_t i = 0; i < 207; i++)
     {
         memset(arr_razasconejo[i],'\0',16);
-        fgets(arr_razasconejo[i], 16, (FILE*) razasconejo);
+        fgets(arr_razasconejo[i], 15, (FILE*) razasconejo);
     }
     srand(time(NULL));
     fclose(razasconejo);
-    for (size_t i = 0; i < 3333333; i++)
+    for (size_t i = 0; i < 33; i++)
     {
-        myf = fopen("dataDogs.dat","ab");
+        myf = fopen("dataDogsTest.dat","ab");
         lista.id=i;
         int num=rand() %1717;
         strcpy(lista.nombre,arr_nombres[num]);
@@ -82,11 +82,13 @@ int main(int argc, char const *argv[])
         }
         lista.hash=PolyHash(lista.nombre);
         fwrite(&lista,sizeof(struct Dog),1,myf);
+        lista.id=i+100;
+        fwrite(&lista,sizeof(struct Dog),1,myf);
         fclose(myf);  
     }
-    for (size_t i = 3333333; i < 6666666; i++)
+    for (size_t i = 33; i < 66; i++)
     {
-        myf = fopen("dataDogs.dat","ab");
+        myf = fopen("dataDogsTest.dat","ab");
         lista.id=i;
         int num=rand() %1717;
         strcpy(lista.nombre,arr_nombres[num]);
@@ -107,11 +109,13 @@ int main(int argc, char const *argv[])
         }
         lista.hash=PolyHash(lista.nombre);
         fwrite(&lista,sizeof(struct Dog),1,myf);
+        lista.id=i+100;
+        fwrite(&lista,sizeof(struct Dog),1,myf);
         fclose(myf);  
     }
-    for (size_t i = 6666666; i < 10000001; i++)
+    for (size_t i = 66; i < 101; i++)
     {
-        myf = fopen("dataDogs.dat","ab");
+        myf = fopen("dataDogsTest.dat","ab");
         lista.id=i;
         int num=rand() %1717;
         strcpy(lista.nombre,arr_nombres[num]);
@@ -132,26 +136,10 @@ int main(int argc, char const *argv[])
         }
         lista.hash=PolyHash(lista.nombre);
         fwrite(&lista,sizeof(struct Dog),1,myf);
+        lista.id=i+100;
+        fwrite(&lista,sizeof(struct Dog),1,myf);
         fclose(myf);  
-    }
-    /*
-    for (size_t i = 0; i < 10; i++)
-    {
-        printf("Nombre: %s\n",lista[i].nombre);
-        printf("Tipo: %s \n",lista[i].tipo);
-        printf("Edad: %d \n", lista[i].edad);
-        printf("Raza: %s \n", lista[i].raza);
-        printf("Estatura: %d \n", lista[i].estatura);
-        printf("Peso: %.2f \n", lista[i].peso);
-        printf("Sexo: %c \n", lista[i].sexo);
-        printf("Hash: %d \n", lista[i].hash);
-        
-    }*/
-    
-    
-      
-    
-                   
+    }          
     return 0;
 }
 int PolyHash (char cadena[])
