@@ -23,15 +23,15 @@ int main(int argc, char const *argv[])
     myf = fopen("dataDogs.dat","rb+");
     tabla = fopen("TablaHash.dat","wb");
     int primero[1010],ultimo[1010];
-    for (size_t i = 0; i < 1009; i++)
+    for (size_t i = 0; i < 1010; i++)
     {
-        primero[i]=102;
+        primero[i]=-1;
     }
     for (size_t i = 0; i < 10000001; i++)
     {
         fseek(myf,sizeof(struct Dog)*i,SEEK_SET);
         fread(&Actual,sizeof(struct Dog),1,myf);
-        if (primero[Actual.hash]==102)
+        if (primero[Actual.hash]==-1)
         {
             primero[Actual.hash]=i;
             ultimo[Actual.hash]=i;
@@ -68,10 +68,18 @@ int main(int argc, char const *argv[])
 int PolyHash (char cadena[])
     {
         int Hash=0;
-        for (size_t o = 31; o > 0; o--)
+        for (int o = 31; o >= 0; o--)
         {
-            Hash=(Hash*38+(int)cadena[o])% 1009;
+            if(cadena[o]<0)
+            {
+                Hash=(Hash*38-(int)cadena[o])% 1009;
+            }
+            else
+            {
+                Hash=(Hash*38+(int)cadena[o])% 1009;
+            }
+            
+            
         }
-        Hash=(Hash*38+(int)cadena[0])% 1009;
         return Hash;        
     }

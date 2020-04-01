@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 struct Dog{
     int id;
     char nombre[32];
@@ -157,10 +158,18 @@ int main(int argc, char const *argv[])
 int PolyHash (char cadena[])
     {
         int Hash=0;
-        for (size_t o = 31; o > 0; o--)
+        for (int o = 31; o >= 0; o--)
         {
-            Hash=(Hash*38+(int)cadena[o])% 1009;
+            if(cadena[o]<0)
+            {
+                Hash=(Hash*38-(int)cadena[o])% 1009;
+            }
+            else
+            {
+                Hash=(Hash*38+(int)cadena[o])% 1009;
+            }
+            
+            
         }
-        Hash=(Hash*38+(int)cadena[0])% 1009;
         return Hash;        
     }
