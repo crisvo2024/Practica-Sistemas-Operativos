@@ -6,22 +6,22 @@ Akita Americano
 Alano español
 Alaskan malamute
 Alaskan Klee Kai
-American Hairless terrier
-American Staffordshire Terrier
-Antiguo Perro Pastor Inglés
+American Hairles
+American Staffor
+Antiguo Perro Pa
 Appenzeller
-Australian Cattle Dog
-Australian terrier
-Australian Silky Terrier
+Australian Cattl
+Australian terri
+Australian Silky
 Azawakh
-Bardino (Perro majorero)
+Bardino (Perro m
 Bandog
 Basenji
-Basset azul de Gascuña
+Basset azul de G
 Basset hound
 Beagle
 Beauceron
-Bedlington terrier
+Bedlington terri
 Bergamasco
 Bichon frisé
 Bichón maltés
@@ -33,18 +33,18 @@ Borzoi
 Boston terrier
 Bóxer
 Boyero de Berna
-Boyero de Flandes
-Braco alemán de pelo corto
-Braco alemán de pelo duro
-Braco de Auvernia
+Boyero de Flande
+Braco alemán de
+Braco alemán de
+Braco de Auverni
 Braco francés
 Braco húngaro
 Braco italiano
 Braco tirolés
-Braco de Saint Germain
+Braco de Saint G
 Braco de Weimar
 Bull Terrier
-Bulldog americano
+Bulldog american
 Bulldog francés
 Bulldog inglés
 Bullmastiff
@@ -52,62 +52,62 @@ Buhund noruego
 Calupoh
 Can de palleiro
 Caniche
-Cão da Serra da Estrela
-Cão da Serra de Aires
-Cão de Agua Português
-Cão de Castro Laboreiro
-Cão de Fila de São Miguel
-Cavalier King Charles Spaniel
-Cazador de alces noruego
-Chesapeake Bay Retriever
+Cão da Serra da
+Cão da Serra de
+Cão de Agua Port
+Cão de Castro La
+Cão de Fila de S
+Cavalier King Ch
+Cazador de alces
+Chesapeake Bay R
 Chihuahueño
 Crestado Chino
-Cimarrón Uruguayo
+Cimarrón Uruguay
 Cirneco del Etna
 Chow chow
 Clumber spaniel
-Cobrador de pelo liso
-Cocker spaniel americano
-Cocker spaniel inglés
-Collie de pelo corto
-Collie de pelo largo
+Cobrador de pelo
+Cocker spaniel a
+Cocker spaniel i
+Collie de pelo c
+Collie de pelo l
 Bearded collie
-Corgi galés de Cardigan
+Corgi galés de C
 Dachshund
 Dálmata
-Dandie Dinmont Terrier
+Dandie Dinmont T
 Deerhound
 Dobermann
 Dogo alemán
 Dogo argentino
 Dogo de burdeos
 Dogo del Tíbet
-Dogo guatemalteco
-English springer spaniel
+Dogo guatemaltec
+English springer
 Entlebucher
 Épagneul bretón
-Épagneul français
-Epagneul papillón
+Épagneul françai
+Epagneul papilló
 Eurasier
 Fila Brasileiro
-Flat-Coated Retriever
+Flat-Coated Retr
 Fox Terrier
-Foxhound americano
+Foxhound america
 Galgo español
 Galgo húngaro
 Galgo inglés
 Galgo italiano
 Golden retriever
-Glen of Imaal Terrier
+Glen of Imaal Te
 Gran danés
 Gegar colombiano
 Greyhound
 Grifón belga
 Hovawart
 Husky siberiano
-Jack Russell Terrier
+Jack Russell Ter
 Keeshond
-Kerry blue terrier
+Kerry blue terri
 Komondor
 Kuvasz
 Labrador
@@ -119,65 +119,65 @@ Lebrel polaco
 Leonberger
 Lobero irlandés
 Lundehund
-Perro lobo de Saarloos
+Perro lobo de Sa
 Lhasa apso
 Löwchen
 Maltés
 Malinois
-Manchester terrier
+Manchester terri
 Mastín afgano
-Mastín del Pirineo
+Mastín del Pirin
 Mastín español
 Mastín inglés
 Mastín italiano
-Mastín napolitano
+Mastín napolitan
 Mastín tibetano
 Mucuchies
 Mudi
-Münsterländer grande
-Münsterländer pequeño
-Nova Scotia Duck Tolling Retriever
-Ovejero magallánico
+Münsterländer gr
+Münsterländer pe
+Nova Scotia Duck
+Ovejero magallán
 Pastor alemán
 Pastor belga
-Pastor blanco suizo
+Pastor blanco su
 Pastor catalán
 Pastor croata
 Pastor garafiano
 Pastor holandés
-Pastor peruano Chiribaya
+Pastor peruano C
 Pastor de Brie
-Pastor de los Pirineos
+Pastor de los Pi
 Pastor leonés
-Pastor mallorquín
-Pastor maremmano-abrucés
+Pastor mallorquí
+Pastor maremmano
 Pastor de Valée
 Pastor vasco
 Pekinés
-Pembroke Welsh Corgi
-Pequeño Lebrel Italiano
-Perdiguero francés
-Perdiguero portugués
-Perro cimarrón uruguayo
-Perro de agua americano
-Perro de agua español
-Perro de agua irlandés
-Perro de agua portugués
-Perro de Groenlandia
-Perro de osos de Carelia
-Perro dogo mallorquín
-Perro esquimal canadiense
-Perro de Montaña de los Pirineos
-Perro fino colombiano
-Perro pastor de las islas Shetland
-Perro peruano sin pelo
+Pembroke Welsh C
+Pequeño Lebrel I
+Perdiguero franc
+Perdiguero portu
+Perro cimarrón u
+Perro de agua am
+Perro de agua es
+Perro de agua ir
+Perro de agua po
+Perro de Groenla
+Perro de osos de
+Perro dogo mallo
+Perro esquimal c
+Perro de Montaña
+Perro fino colom
+Perro pastor de 
+Perro peruano si
 Phalène
 Pinscher alemán
-Pinscher miniatura
+Pinscher miniatu
 Pitbull
 Podenco canario
 Podenco ibicenco
-Podenco portugués
+Podenco portugué
 Pointer
 Pomerania
 Presa canario
@@ -185,20 +185,20 @@ Pudelpointer
 Pug
 Puli
 Pumi
-Rafeiro do Alentejo
-Ratonero bodeguero andaluz
-Ratonero mallorquín
-Ratonero valenciano
-Rhodesian Ridgeback
+Rafeiro do Alent
+Ratonero bodegue
+Ratonero mallorq
+Ratonero valenci
+Rhodesian Ridgeb
 Rottweiler
 Saluki
 Samoyedo
 San Bernardo
 Schapendoes
-Schnauzer estándar
-Schnauzer gigante
-Schnauzer miniatura
-Staffordshire Bull Terrier
+Schnauzer estánd
+Schnauzer gigant
+Schnauzer miniat
+Staffordshire Bu
 Sabueso bosnio
 Schipperke
 Sealyham terrier
@@ -220,23 +220,23 @@ Sussex spaniel
 Teckel
 Terranova
 Terrier alemán
-Terrier brasileño
+Terrier brasileñ
 Terrier checo
 Terrier chileno
-Terrier de Norfolk
-Terrier de Norwich
+Terrier de Norfo
+Terrier de Norwi
 Terrier escocés
 Terrier galés
 Terrier irlandés
-Terrier ruso negro
+Terrier ruso neg
 Terrier tibetano
-Toy spaniel inglés
+Toy spaniel ingl
 Tervueren
 Vallhund sueco
 Volpino italiano
 Weimaraner
-West Highland White Terrier
+West Highland Wh
 Whippet
 Wolfsspitz
 Xoloitzcuintle
-Yorkshire terrier
+Yorkshire terrie

@@ -1,18 +1,18 @@
 Abisinio
 Angora turco
 American curl.
-American Shorthair.
-American wirehair
+American Shortha
+American wirehai
 Azul ruso
 Balines
 Bengalí
 Bobtail japonés
 Bombay
-Bosque de Noruega
-British Shorthair
+Bosque de Norueg
+British Shorthai
 Burmese
-California spangled
-Chartreux o Cartujo
+California spang
+Chartreux o Cart
 Cornish rex
 Devon Rex
 Exótico
@@ -25,7 +25,7 @@ Manx
 Mau egipcio
 Nibelungo
 Ocicat
-Oriental de pelo corto
+Oriental de pelo
 Persa
 Ragdoll
 Scottish fold
@@ -38,9 +38,9 @@ Sphynx
 Tiffanie
 Tonkinés
 Van turco
-Africano doméstico
+Africano domésti
 Angora turco
-Aphrodite-s Giants
+Aphrodite-s Gian
 Australian Mist
 Ceylon
 Cymric

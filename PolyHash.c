@@ -3,24 +3,26 @@
 #include <stdlib.h>
 
 int PolyHash (char cadena[])
+{
+    int i = 0;    
+    while (cadena[i] != '\0') 
     {
-        int Hash=0;
-        for (int o = 31; o >= 0; o--)
-        {
-            if(cadena[o]<0)
-            {
-                Hash=(Hash*38-(int)cadena[o])% 1009;
-            }
-            else
-            {
-                Hash=(Hash*38+(int)cadena[o])% 1009;
-            }
-            
-            
+        if (cadena[i] >= 'a' && cadena[i] <= 'z') {
+            cadena[i] = cadena[i] - 32;
         }
-        return Hash;        
+        i++;
     }
-
+    
+    int Hash=0;
+    for (int o = 31; o >= 0; o--)
+    {
+        Hash=(Hash*31+(int)cadena[o])% 1009;
+    }
+    if(Hash<0){
+        Hash=-Hash;
+    }
+    return Hash;        
+    }
 int main(int argc, char const *argv[])
 {
     char nombre[32];
@@ -30,7 +32,7 @@ int main(int argc, char const *argv[])
     printf("Nombre: ");
     scanf("%s",&nombre);
     printf("hash: %d",PolyHash(nombre));
-    printf("hash: ");
+    printf("hash %s: ",nombre);
     }
     return 0;
 }
