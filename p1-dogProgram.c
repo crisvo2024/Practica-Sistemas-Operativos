@@ -28,6 +28,7 @@ int mygetch ( void );
 FILE *myf,*tablaHash,*eliminados;
 int n, tabla[1010],offset,total;
 struct dogType *lista;
+int maxid;
 
 int main(int argc, char const *argv[])
 {
@@ -51,6 +52,7 @@ int main(int argc, char const *argv[])
     //calculo de registros totales
     fseek(myf,-sizeof(struct dogType),SEEK_END);
     fread(&Anterior,sizeof(struct dogType),1,myf);
+    maxid=Anterior.id;
     total=Anterior.id+1-offset;
     //menu
     do
@@ -97,27 +99,26 @@ int main(int argc, char const *argv[])
 
             case 2:;
                 salir=0;
+                id=-1;
                 struct dogType Nuevo;
                 char desition;
-                printf("Hay %d registros, ingrese el id del registro que desea ver\n",total);
-                scanf("%d",&id);
-                //verificacion de que el id no este eliminado
-                fseek(eliminados,0,SEEK_SET);
-                while(!feof(eliminados))
+                do
                 {
-                    fread(&deleted,sizeof(int),1,eliminados);
-                    if(deleted==id){
-                        printf("No hay mascota con el id %d \n", id);
-                        salir=1;
-                        break;
+                    salir=0;
+                    printf("Hay %d registros, ingrese el id del registro que desea ver\n",total);
+                    scanf("%d",&id);
+                    //verificacion de que el id no este eliminado
+                    fseek(eliminados,0,SEEK_SET);
+                    while(!feof(eliminados))
+                    {
+                        fread(&deleted,sizeof(int),1,eliminados);
+                        if(deleted==id||id>maxid||id<0){
+                            printf("No hay mascota con el id %d \n", id);
+                            salir=1;
+                            break;
+                        }
                     }
-                }
-                if(salir==1)
-                {
-                    printf("Oprima cualquier tecla para continuar");
-                    mygetch();
-                    break;
-                }
+                } while (id>maxid||id<0||salir==1);
                 //viajar a la posicion id en el archivo si existe, sino a la posicion menos los eliminados
                 if(id>=total-1){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
@@ -279,6 +280,7 @@ int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,f
     //liberacion de memoria de la lista encadenada
     free(lista);
     total++;
+    maxid++;
 }
 
 int Listar(int Hash){
