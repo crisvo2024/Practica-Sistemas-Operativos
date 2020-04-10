@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <termios.h>
 
 
 struct dogType{
@@ -23,6 +24,7 @@ int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,f
 int Listar(int Hash);
 int eliminar (int id);
 int Buscar(char nombre[32]);
+int mygetch ( void );
 FILE *myf,*tablaHash,*eliminados;
 int n, tabla[1010],offset,total;
 struct dogType *lista;
@@ -59,6 +61,7 @@ int main(int argc, char const *argv[])
         printf("\n 3. Borrar Registro ","%s\n");
         printf("\n 4. Buscar Registro ","%s\n ");
         printf("\n 0. Salir" ,"%s\n ");
+        printf("\nIngrese el numero de la opcion: ","%s\n");
         scanf("%d", &opcion);
         switch(opcion)
         {
@@ -70,26 +73,26 @@ int main(int argc, char const *argv[])
                 int estatura;
                 float peso;
                 char sexo;
-                printf("Ingrese el nombre de la mascota","%s\n");
+                printf("Ingrese el nombre de la mascota: ","%s\n");
                 //limpieza de cadena nombre
                 memset(nombre,'\0',32);
                 scanf("%s",&nombre);
                 strcat(nombre,"\n");
-                printf("Ingrese el tipo de la mascota","%s\n");
+                printf("Ingrese el tipo de la mascota: ","%s\n");
                 scanf("%s",&tipo);
-                printf("Ingrese la edad de la mascota","%s\n");
+                printf("Ingrese la edad de la mascota: ","%s\n");
                 scanf("%d",&edad);
-                printf("Ingrese la raza de la mascota","%s\n");
+                printf("Ingrese la raza de la mascota: ","%s\n");
                 scanf("%s",&raza);
-                printf("Ingrese la estatura de la mascota","%s\n");
+                printf("Ingrese la estatura de la mascota: ","%s\n");
                 scanf("%d",&estatura);
-                printf("Ingrese el peso de la mascota","%s\n");
+                printf("Ingrese el peso de la mascota: ","%s\n");
                 scanf("%f",&peso);
-                printf("Ingrese el sexo de la mascota M o H","%s\n");
+                printf("Ingrese el sexo de la mascota M o H: ","%s\n");
                 scanf(" %c",&sexo);
                 int x= ingresar(nombre,tipo,edad,raza,estatura,peso,sexo);
-                printf("Oprima cualquier letra para continuar");
-                scanf(" %c",&continuar);
+                printf("Oprima cualquier tecla para continuar");
+                mygetch();
                 break;
 
             case 2:;
@@ -104,12 +107,17 @@ int main(int argc, char const *argv[])
                 {
                     fread(&deleted,sizeof(int),1,eliminados);
                     if(deleted==id){
-                        printf("No hay mascota con el id %d", id);
+                        printf("No hay mascota con el id %d \n", id);
                         salir=1;
                         break;
                     }
                 }
-                if(salir==1)break;
+                if(salir==1)
+                {
+                    printf("Oprima cualquier tecla para continuar");
+                    mygetch();
+                    break;
+                }
                 //viajar a la posicion id en el archivo si existe, sino a la posicion menos los eliminados
                 if(id>=total-1){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
@@ -147,10 +155,10 @@ int main(int argc, char const *argv[])
                         system(comando);
                         break;
                     }
-                    if(desition!='N'||desition!='n')printf("Opcion no valida");
-                }while(desition!='n' || desition!='N');
-                printf("Oprima cualquier letra para continuar");
-                scanf(" %c",&continuar);  
+                    if(desition!='N'&&desition!='n')printf("Opcion no valida");
+                }while(desition!='n' && desition!='N');
+                printf("Oprima cualquier tecla para continuar");
+                mygetch();  
                 break;
 
             case 3:;
@@ -203,21 +211,21 @@ int main(int argc, char const *argv[])
                         eliminar(eliminado.id); 
                         break; 
                     }
-                    if(desition=='n' || desition=='N')printf("Operacion abortada \n");
-                }while(desition!='n' || desition!='N');
+                    if(desition=='n' && desition=='N')printf("Operacion abortada \n");
+                }while(desition!='n' && desition!='N');
                 
-                printf("Oprima cualquier letra para continuar");
-                scanf(" %c",&continuar);
+                printf("Oprima cualquier tecla para continuar");
+                mygetch();
                 break;
             case 4:;
-                printf("Ingrese el nombre a buscar");
+                printf("Ingrese el nombre a buscar: ");
                 //limpieza de cadena nombre
                 memset(nombre,'\0',32);
                 scanf("%s",&nombre);
                 strcat(nombre,"\n");
                 Buscar(nombre);
-                printf("Oprima cualquier letra para continuar");
-                scanf(" %c",&continuar);
+                printf("Oprima cualquier tecla para continuar");
+                mygetch();
                 break;
             default:
                 printf("opcion no valida");
@@ -308,7 +316,7 @@ int Listar(int Hash){
 int eliminar (int id)
 {
     struct dogType buffer, deleted;
-    
+    int posdel=id;
     //viajar a la posicion de id si existe o a la posicion menos los eliminados
     if(id>=total-1){
         fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
@@ -323,55 +331,91 @@ int eliminar (int id)
         fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
         fread(&deleted,sizeof(struct dogType),1,myf);
     }
-    //se crea la lista encadenada del hash a borrar
-    //hacer casos de eliminacino de primero y unico de lista ecadenada
+    //se crea la lista encadenada del hash del id a borrar y se verifica si su tamaño es 1
     Listar(deleted.hash);
-    int pos=0;
-    while(pos<n)
+    if(n==1)
     {
-        if(lista[pos++].id==id)break;
-    }
-    fseek(myf,sizeof(struct dogType)*lista[pos-2].id,SEEK_SET);
-    fread(&buffer,sizeof(struct dogType),1,myf);
-    while(buffer.id!=lista[pos-2].id)
+        //si solo hay uno en la lista ecadenada se elimina de la tabla hash esa posicion
+        tabla[deleted.hash]=-1;
+    }else
     {
-        fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
-        fread(&buffer,sizeof(struct dogType),1,myf);
+        //si hay mas se verifica en que posicion de la lista encadenada esta el id a borrar
+        int pos=0;
+        while(pos<n)
+        {
+            if(lista[pos++].id==id)break;
+        }
+        if(pos==1)
+        {
+            //si la posicion es la primera se remplaza en la tabla hash con el next del eliminado
+            tabla[deleted.hash]=deleted.next;
+        }else
+        {
+            //vamos a la posicion en el archivo del id de la posicion anterior al que vamos a eliminar 
+            fseek(myf,sizeof(struct dogType)*lista[pos-2].id,SEEK_SET);
+            fread(&buffer,sizeof(struct dogType),1,myf);
+            //verificar que corresponda la posicion con el id de la posicion anterior al que vamos a eliminar
+            while(buffer.id!=lista[pos-2].id)
+            {
+                fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+                fread(&buffer,sizeof(struct dogType),1,myf);
+            }
+            fseek(myf,-sizeof(struct dogType),SEEK_CUR);
+            //reemplazamos el next del id anterior por el next del eliminado
+            lista[pos-2].next=lista[pos-1].next;
+            fwrite(&lista[pos-2],sizeof(struct dogType),1,myf);
+        }
+        
     }
-    fseek(myf,-sizeof(struct dogType),SEEK_CUR);
-    lista[pos-2].next=lista[pos-1].next;
-    fwrite(&lista[pos-2],sizeof(struct dogType),1,myf);
+    //se cierra el archivo para aegurarnos de que los cambios hechos se guarden
     fclose(myf);
     myf=fopen("dataDogs.dat","rb+");
+    //se copia el archivo con la funcion cp del sistema operativo
     system("cp dataDogs.dat dataDogs1.dat");
+    //se habre la copia del archivo
     FILE *New= fopen("dataDogs1.dat","rb+");
+    //ir a la posicion del id del eliminado en el en datadogs y en su copia
     fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
     fread(&buffer,sizeof(struct dogType),1,myf);
     fseek(New,sizeof(struct dogType)*id,SEEK_SET);
+    //verificamos que la posicion corresponda con el id a eliminar
     while (buffer.id!=id)
     {
+        //se corrige la posicion del id a eliminar 
+        posdel--;
         fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
         fseek(New,-sizeof(struct dogType),SEEK_CUR);
         fread(&buffer,sizeof(struct dogType),1,myf);
     }    
+    //se escriben todas las posiciones despues del id a eliminar en el nuevo archivo 
+    //saltando el eliminado y reduciendo en uno el next de cada uno
     while(!feof(myf))
     {
         fread(&buffer,sizeof(struct dogType),1,myf);
         buffer.next--;
         fwrite(&buffer,sizeof(struct dogType),1,New);
     }
+    //truncamos el archivo nuevo con el tamaño del archivo original menos una estructura
     fseek(New, 0L, SEEK_END);
     int sz=ftell(myf)-sizeof(struct dogType);
     ftruncate(fileno(New),sz);
+    //eliminamos el archivo anterior con ma funcion rm del sistema operativo
     system("rm dataDogs.dat");
+    //guardamos los cambios en el nuevo archivo y lo renombramos con el nombre del antiguo
+    //utilizando la funcion mv del sistema operativo
     fclose(New);
     system("mv dataDogs1.dat dataDogs.dat");
+    //liberamos la memoria de lista 
     free(lista);
+    //añadimos en el archivo eliminados el id de la estructura eliminada
     fseek(eliminados,0,SEEK_END);
     fwrite(&id,sizeof(int),1,eliminados);
     struct dogType actual; 
+    //reabriendo dataDogs.dat para que tome el nuevo archivo
     fclose(myf);
     myf=fopen("dataDogs.dat","rb+");
+    //reducimos en 1 todos los next de las posiciones anteriores a la eliminada cuyo next
+    //va despues de la eliminada
     fseek(myf,0,SEEK_SET);
     fread(&actual,sizeof(struct dogType),1,myf);
     for (size_t i = 0; actual.id<id; i++){
@@ -381,21 +425,34 @@ int eliminar (int id)
             fwrite(&actual,sizeof(struct dogType),1,myf);
         }
         fread(&actual,sizeof(struct dogType),1,myf);
-    }  
+    }
+    //actualizamos la tabla hash reduciendo en uno todos los que estan despues de eliminado
+    for (size_t i = 0; i < 1010; i++)
+    {
+        if(tabla[i]>posdel)tabla[i]--;
+    }
+    fseek(tablaHash,0,SEEK_SET);
+    fwrite(&tabla,sizeof(tabla),1,tablaHash);
+    //se suma uno al offset y se actualizan los totales
     offset++;
     total--;
     
 }
 
 int Buscar(char nombre[32]){
+    int registros=0;
+    //se genera la lista del hash del nombre y se verifica su existencia
     int con= Listar(PolyHash(nombre));
     if(con==1){
-        printf(nombre,"%s no existe \n");
+        printf("%s no existe \n",nombre);
         return 0;
     }
     for(int i=0;i<=n;i++)
     {
+        //se imprimen los registros de la lista ecadenada cuyo nombre corresponda con el buscado 
+        //y se contabilizan la cantidad de registros que coninciden
         if(strcoll(lista[i].nombre,nombre)==0){
+            registros++;
             printf("\nID: %d\n",lista[i].id);
             printf("Nombre: %s\n",lista[i].nombre);
             printf("Tipo: %s \n",lista[i].tipo);
@@ -409,10 +466,15 @@ int Buscar(char nombre[32]){
         }
         
     }
+    //si la cantidad de registros que coinciden es 0 se imprime mensaje de que no existe 
+    if(registros==0)printf("%s no existe \n",nombre);
+    // se libera la memoria de la lista
     free(lista);
 }
+
 int PolyHash (char cadena[])
 {
+    //se tranforman todas las letras de la cadena en mayusuculas
     int i = 0;
     while (cadena[i] != '\0') 
     {
@@ -421,13 +483,31 @@ int PolyHash (char cadena[])
         }
     i++;
     }
+    //se calcula el hash ignorando caracteres especiales
     int Hash=0;
     for (int o = 31; o >= 0; o--)
     {
         if(cadena[o] >= 'A' && cadena[o] <= 'Z') Hash=(Hash*31+(int)cadena[o])% 1009;
     }
+    //se utiliza valor absoluto en el hash y se retorna el valor
     if(Hash<0){
         Hash=-Hash;
     }
     return Hash;        
+}
+//funcion tomada de https://faq.cprogramming.com/cgi-bin/smartfaq.cgi?id=1043284385&answer=1042856625
+int mygetch ( void ) 
+{
+  int ch;
+  struct termios oldt, newt;
+  
+  tcgetattr ( STDIN_FILENO, &oldt );//leer los atributos de entrada de la consola
+  newt = oldt;//copiarlos en newt
+  newt.c_lflag &= ~( ICANON | ECHO );//descativa el modo canonico de la entrada
+  tcsetattr ( STDIN_FILENO, TCSANOW, &newt );//fijar atributos de newt
+  ch = getchar();//lee el caracter anterior que deja scanf sin leer
+  ch = getchar();//espera cualquier entrada
+  tcsetattr ( STDIN_FILENO, TCSANOW, &oldt );//resetea los atributos de entrada de la consola
+  
+  return ch;
 }
