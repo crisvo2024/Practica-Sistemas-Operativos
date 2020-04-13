@@ -122,17 +122,24 @@ int main(int argc, char const *argv[])
                 //viajar a la posicion id en el archivo si existe, sino a la posicion menos los eliminados
                 if(id>total){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
-
+                    //comprobar que la posicion corresponde con el id
+                    fread(&Nuevo,sizeof(struct dogType),1,myf);
+                    while(Nuevo.id!=id)
+                    {
+                        fread(&Nuevo,sizeof(struct dogType),1,myf);
+                    }
                 }else{
                     fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
-                }
-                //comprobar que la posicion corresponde con el id
-                fread(&Nuevo,sizeof(struct dogType),1,myf);
-                while(Nuevo.id!=id)
-                {
-                    fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+                    //comprobar que la posicion corresponde con el id
                     fread(&Nuevo,sizeof(struct dogType),1,myf);
+                    while(Nuevo.id!=id)
+                    {
+                        fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+                        fread(&Nuevo,sizeof(struct dogType),1,myf);
+                    }
                 }
+                
+                
                 printf("\nID: %d\n",Nuevo.id);
                 printf("Nombre: %s\n",Nuevo.nombre);
                 printf("Tipo: %s \n",Nuevo.tipo);
@@ -180,24 +187,27 @@ int main(int argc, char const *argv[])
                         }
                     }
                 }while (salir==1||id>maxid||id<0);
-                {
-                    /* code */
-                }
                 
                 //viajar a la posicion de id si existe o a la posicion menos los eliminados
                 if(id>total){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
-
+                    //verificar que el id corresponda con la posicion devolviendose hasta encontrarlo
+                    fread(&eliminado,sizeof(struct dogType),1,myf);
+                    while(eliminado.id!=id)
+                    {
+                        fread(&eliminado,sizeof(struct dogType),1,myf);
+                    }
                 }else{
                     fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
-                }
-                //verificar que el id corresponda con la posicion devolviendose hasta encontrarlo
-                fread(&eliminado,sizeof(struct dogType),1,myf);
-                while(eliminado.id!=id)
-                {
-                    fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+                    //verificar que el id corresponda con la posicion devolviendose hasta encontrarlo
                     fread(&eliminado,sizeof(struct dogType),1,myf);
+                    while(eliminado.id!=id)
+                    {
+                        fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+                        fread(&eliminado,sizeof(struct dogType),1,myf);
+                    }
                 }
+                
                 printf("\n Datos del registro que desea eliminar: \n");
                 printf("\nID: %d\n",eliminado.id);
                 printf("Nombre: %s\n",eliminado.nombre);
