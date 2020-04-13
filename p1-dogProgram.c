@@ -359,17 +359,23 @@ int eliminar (int id)
     //viajar a la posicion de id si existe o a la posicion menos los eliminados
     if(id>total){
         fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
-
+        //se busca en el archivo a partir de la posicion actual y se mueve hasta el registro con el id correspondiente    
+        fread(&deleted,sizeof(struct dogType),1,myf);
+        while(deleted.id!=id)
+        {
+            fread(&deleted,sizeof(struct dogType),1,myf);
+        }
     }else{
         fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
-    }
-    //se busca en el archivo a partir de la posicion actual y se mueve hasta el registro con el id correspondiente    
-    fread(&deleted,sizeof(struct dogType),1,myf);
-    while(deleted.id!=id)
-    {
-        fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+        //se busca en el archivo a partir de la posicion actual y se mueve hasta el registro con el id correspondiente    
         fread(&deleted,sizeof(struct dogType),1,myf);
+        while(deleted.id!=id)
+        {
+            fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
+            fread(&deleted,sizeof(struct dogType),1,myf);
+        }
     }
+    
     //se crea la lista encadenada del hash del id a borrar y se verifica si su tamaño es 1
     Listar(deleted.hash);
     if(n==1)
