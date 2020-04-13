@@ -168,6 +168,7 @@ int main(int argc, char const *argv[])
                 printf("\n Hay %d registros, ingrese el id del registro que desea eliminar: \n",total);
                 scanf("%d",&id);
                 //verificacion de que el id no este eliminado
+                fseek(eliminados,0,SEEK_SET);
                 while(!feof(eliminados))
                 {
                     fread(&deleted,sizeof(int),1,eliminados);
@@ -240,12 +241,22 @@ int main(int argc, char const *argv[])
 int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,float peso, char sexo)
 {
     struct dogType Anterior, Nuevo;
-    int id;
+    int id, deleted;
     //encontrar y leer estructura final en anterior
     fseek(myf,-sizeof(struct dogType),SEEK_END);
     fread(&Anterior,sizeof(struct dogType),1,myf);
     //inicializar Nuevo con los datos ingresados limpiando los campos necesarios
     id=Anterior.id+1;
+    //comprobar que el nuevo id no corresponda con uno que se halla eliminado antes
+    fseek(eliminados,0,SEEK_SET);
+    while(!feof(eliminados))
+    {
+        fread(&deleted,sizeof(int),1,eliminados);
+        if(deleted==id){
+            id++;
+            break;
+        }
+    }
     Nuevo.id=id;
     memset(Nuevo.nombre,'\0',32);
     strcpy(Nuevo.nombre,nombre);
