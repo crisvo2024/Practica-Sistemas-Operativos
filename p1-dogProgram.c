@@ -317,7 +317,7 @@ int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,f
     printf("Hash: %d \n", Nuevo.hash);
     printf("Next: %d \n", Nuevo.next);
     total++;
-    maxid++;
+    maxid=id;
 }
 
 int Listar(int Hash){
@@ -419,10 +419,16 @@ int eliminar (int id)
     system("cp dataDogs.dat dataDogs1.dat");
     //se habre la copia del archivo
     FILE *New= fopen("dataDogs1.dat","rb+");
-    //ir a la posicion del id del eliminado en el en datadogs y en su copia
-    fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
+    //ir a la posicion del id del eliminado en el en datadogs y en su copia, o al ultimo registro si el id es mayor a la cantidad de registros
+    if(id>total){
+        fseek(myf,-sizeof(struct dogType),SEEK_END);
+        fseek(New,-sizeof(struct dogType),SEEK_END);
+        posdel=total-1;
+    }else{
+        fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
+        fseek(New,sizeof(struct dogType)*id,SEEK_SET);
+    }   
     fread(&buffer,sizeof(struct dogType),1,myf);
-    fseek(New,sizeof(struct dogType)*id,SEEK_SET);
     //verificamos que la posicion corresponda con el id a eliminar
     while (buffer.id!=id)
     {
