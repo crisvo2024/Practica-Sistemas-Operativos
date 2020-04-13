@@ -164,21 +164,26 @@ int main(int argc, char const *argv[])
 
             case 3:;
                 struct dogType eliminado;
-                salir=0;
-                printf("\n Hay %d registros, ingrese el id del registro que desea eliminar: \n",total);
-                scanf("%d",&id);
-                //verificacion de que el id no este eliminado
-                fseek(eliminados,0,SEEK_SET);
-                while(!feof(eliminados))
-                {
-                    fread(&deleted,sizeof(int),1,eliminados);
-                    if(deleted==id){
-                        printf("No hay mascota con el id %d", id);
-                        salir=1;
-                        break;
+                do{
+                    salir=0;
+                    printf("\n Hay %d registros, ingrese el id del registro que desea eliminar: \n",total);
+                    scanf("%d",&id);
+                    //verificacion de que el id no este eliminado
+                    fseek(eliminados,0,SEEK_SET);
+                    while(!feof(eliminados))
+                    {
+                        fread(&deleted,sizeof(int),1,eliminados);
+                        if(deleted==id||id>maxid||id<0){
+                            printf("No hay mascota con el id %d", id);
+                            salir=1;
+                            break;
+                        }
                     }
+                }while (salir==1||id>maxid||id<0);
+                {
+                    /* code */
                 }
-                if(salir==1)break;
+                
                 //viajar a la posicion de id si existe o a la posicion menos los eliminados
                 if(id>total){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
