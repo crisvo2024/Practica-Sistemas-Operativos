@@ -290,6 +290,17 @@ int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,f
     }
     //liberacion de memoria de la lista encadenada
     free(lista);
+    //impresion de datos de la nueva mascota
+    printf("\nID: %d\n",Nuevo.id);
+    printf("Nombre: %s\n",Nuevo.nombre);
+    printf("Tipo: %s \n",Nuevo.tipo);
+    printf("Edad: %d \n", Nuevo.edad);
+    printf("Raza: %s \n", Nuevo.raza);
+    printf("Estatura: %d \n", Nuevo.estatura);
+    printf("Peso: %.2f \n", Nuevo.peso);
+    printf("Sexo: %c \n", Nuevo.sexo);
+    printf("Hash: %d \n", Nuevo.hash);
+    printf("Next: %d \n", Nuevo.next);
     total++;
     maxid++;
 }
@@ -431,7 +442,7 @@ int eliminar (int id)
     //va despues de la eliminada
     fseek(myf,0,SEEK_SET);
     fread(&actual,sizeof(struct dogType),1,myf);
-    for (size_t i = 0; actual.id<id; i++){
+    for (size_t i = 0; actual.id<id&&i<total; i++){
         if(actual.next>id){
             actual.next--;
             fseek(myf,-sizeof(struct dogType),SEEK_CUR);
