@@ -120,7 +120,7 @@ int main(int argc, char const *argv[])
                     }
                 } while (id>maxid||id<0||salir==1);
                 //viajar a la posicion id en el archivo si existe, sino a la posicion menos los eliminados
-                if(id>total){
+                if(id>=total){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
                     //comprobar que la posicion corresponde con el id
                     fread(&Nuevo,sizeof(struct dogType),1,myf);
@@ -189,7 +189,7 @@ int main(int argc, char const *argv[])
                 }while (salir==1||id>maxid||id<0);
                 
                 //viajar a la posicion de id si existe o a la posicion menos los eliminados
-                if(id>total){
+                if(id>=total){
                     fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
                     //verificar que el id corresponda con la posicion devolviendose hasta encontrarlo
                     fread(&eliminado,sizeof(struct dogType),1,myf);
