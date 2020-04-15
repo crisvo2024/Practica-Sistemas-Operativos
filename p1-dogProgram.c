@@ -357,7 +357,7 @@ int eliminar (int id)
     struct dogType buffer, deleted;
     int posdel=id;
     //viajar a la posicion de id si existe o a la posicion menos los eliminados
-    if(id>total){
+    if(id>=total){
         fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
         //se busca en el archivo a partir de la posicion actual y se mueve hasta el registro con el id correspondiente    
         fread(&deleted,sizeof(struct dogType),1,myf);
@@ -386,7 +386,7 @@ int eliminar (int id)
     {
         //si hay mas se verifica en que posicion de la lista encadenada esta el id a borrar
         int pos=0;
-        while(pos<n)
+        while(pos<=n)
         {
             if(lista[pos++].id==id)break;
         }
