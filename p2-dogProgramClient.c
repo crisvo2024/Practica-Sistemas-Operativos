@@ -35,9 +35,9 @@ int *buffer, *deleted;
 struct dogType *lista;
 int PolyHash (char cadena[]);
 int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,float peso, char sexo);
-int Listar(int Hash);
-int eliminar (int id);
-int Buscar(char nombre[32]);
+int verRegistro();
+int eliminar();
+int Buscar();
 int mygetch ( void );
 
 FILE *myf,*tablaHash,*eliminados;
@@ -48,6 +48,7 @@ int maxid;
 
 int main(int argc, char const *argv[])
 {
+    //abrimos el stream para el paso de mensajes por sockets
     clientfd = socket(AF_INET, SOCK_STREAM, 0);
     if(clientfd < 0){
         perror("\n-->Error en socket():");
@@ -56,13 +57,14 @@ int main(int argc, char const *argv[])
     client.sin_family = AF_INET;
     client.sin_port = htons(PORT);
     inet_aton("127.0.0.1", &client.sin_addr);
+    //se incicia la conexion a clientfd
     r = connect(clientfd, (struct sockaddr *)&client, (socklen_t)sizeof(struct sockaddr));
     if(r < 0){
         perror("\n-->Error en connect(): ");
         exit(-1);
     }
     r=0;
-    //inicializacion de variables y apertura de archivos
+    //inicializacion de variables 
     int opcion=0;
     int id;
     int salir=0;
@@ -75,7 +77,16 @@ int main(int argc, char const *argv[])
     int estatura;
     float peso;
     char sexo;
-    printf("ID maximo: %d Registros en Total: %d Offset: %d",maxid,total, offset);
+    //informacion general
+    buffer=malloc(sizeof(int)*4);
+    r = recv(clientfd, buffer, sizeof(int)*2, 0);
+    if(r<sizeof(int)*2){
+        perror("\n-->Error en recv() inicial");
+        exit(-1);
+    }
+    maxid=buffer[0];
+    total=buffer[1];
+    printf("ID maximo: %d Registros en Total: %d ",maxid,total);
     
     //menu
     do
@@ -89,7 +100,11 @@ int main(int argc, char const *argv[])
         printf("\nIngrese el numero de la opcion: ","%s\n");
         scanf("%d", &opcion);
         if(opcion<=4){
-            send(clientfd,&opcion,sizeof(int),0);
+            //envio al servidor de la opcion del menu
+            r=send(clientfd,&opcion,sizeof(int),0);
+            if(r<0){
+                perror("error en send opción menu");
+            }
         }
         switch(opcion)
         {
@@ -113,12 +128,14 @@ int main(int argc, char const *argv[])
                 scanf("%f",&peso);
                 printf("Ingrese el sexo de la mascota M o H: ","%s\n");
                 scanf(" %c",&sexo);
+                //llamamos funcion ingresar
                 int x= ingresar(nombre,tipo,edad,raza,estatura,peso,sexo);
                 printf("Oprima cualquier tecla para continuar");
                 mygetch();
                 break;
 
             case 2:;
+                //recibimos de servidor el id maximo y el total de estructuras
                 buffer=malloc(sizeof(int)*4);
                 r = recv(clientfd, buffer, sizeof(int)*2, 0);
                 if(r<sizeof(int)*2){
@@ -133,56 +150,38 @@ int main(int argc, char const *argv[])
                 char desition;
                 do
                 {
+                    //informe del total de registroa
                     salir=0;
                     printf("Hay %d registros, ingrese el id del registro que desea ver\n",total);
                     scanf("%d",&id);
+                    //envio de el id al servidor para su busqueda
                     r=send(clientfd,&id,sizeof(int),0);
                     if (r<0)
                     {
                         perror("\nError send() caso 2");
                         exit(EXIT_FAILURE);
                     }
+                    //se recibe confirmacion del servidor sobre la existencia del id enviado
                     r = recv(clientfd, &salir, sizeof(int), 0);
                     if(r<sizeof(int)){
                         perror("\n-->Error en recv() inicial");
                         exit(-1);
                     }
+                    //informe de validez
                     if(salir==1){
                         printf("Ingrese un valor valido \n");
                     }
+                    //el ciclo continu hasta que se ingrese un id valido
                 } while (salir==1);
-                                
-                recv(clientfd,&Nuevo,sizeof(struct dogType),0);
-                printf("\nID: %d\n",Nuevo.id);
-                printf("Nombre: %s\n",Nuevo.nombre);
-                printf("Tipo: %s \n",Nuevo.tipo);
-                printf("Edad: %d \n", Nuevo.edad);
-                printf("Raza: %s \n", Nuevo.raza);
-                printf("Estatura: %d \n", Nuevo.estatura);
-                printf("Peso: %.2f \n", Nuevo.peso);
-                printf("Sexo: %c \n", Nuevo.sexo);
-                printf("Hash: %d \n", Nuevo.hash);
-                printf("Next: %d \n", Nuevo.next);
-                //confirmacion de apertura de historia clinica
-                do
-                {                 
-                    printf("Desea ver la historia clinica de %s (S/N)\n",Nuevo.nombre);
-                    scanf(" %c",&desition);
-                    if(desition=='S'||desition=='s')
-                    {
-                        //llamada a nano con archivo de historia clinica identifi cado por el id
-                        char comando[32];
-                        sprintf(comando,"nano %d.txt",id);
-                        system(comando);
-                        break;
-                    }
-                    if(desition!='N'&&desition!='n')printf("Opcion no valida");
-                }while(desition!='n' && desition!='N');
-                printf("Oprima cualquier tecla para continuar");
+                //llamada a funcion verRegistro
+                verRegistro();   
+                
+                printf("\nOprima cualquier tecla para continuar");
                 mygetch();  
                 break;
 
             case 3:;
+                //recibimos de servidor el id maximo y el total de estructuras
                 buffer=malloc(sizeof(int)*4);
                 r = recv(clientfd, buffer, sizeof(int)*2, 0);
                 if(r<sizeof(int)*2){
@@ -196,61 +195,25 @@ int main(int argc, char const *argv[])
                     salir=0;
                     printf("\n Hay %d registros, ingrese el id del registro que desea eliminar: \n",total);
                     scanf("%d",&id);
+                    //envio del id al servidor para su busqueda
                     r=send(clientfd,&id,sizeof(int),0);
                     if (r<0)
                     {
                         perror("\nError send() caso 2");
                         exit(EXIT_FAILURE);
                     }
+                    //se recibe confirmacion del servidor sobre la existencia del id enviado
                     r = recv(clientfd, &salir, sizeof(int), 0);
                     if(r<sizeof(int)){
                         perror("\n-->Error en recv() eliminado");
                         exit(-1);
                     }
                     if(r==1)printf("\nIngrese un valor valido\n");
+                    //el ciclo continu hasta que se ingrese un id valido
                 }while (salir==1);
-                recv(clientfd,&eliminado,sizeof(struct dogType),0);
-                if(r<0){
-                    perror("\n-->Error en recv() estructura");
-                    exit(-1);
-                }
-                printf("\n Datos del registro que desea eliminar: \n");
-                printf("\nID: %d\n",eliminado.id);
-                printf("Nombre: %s\n",eliminado.nombre);
-                printf("Tipo: %s \n",eliminado.tipo);
-                printf("Edad: %d \n", eliminado.edad);
-                printf("Raza: %s \n", eliminado.raza);
-                printf("Estatura: %d \n", eliminado.estatura);
-                printf("Peso: %.2f \n", eliminado.peso);
-                printf("Sexo: %c \n", eliminado.sexo);
-                printf("Hash: %d \n", eliminado.hash);
-                printf("Next: %d \n", eliminado.next);
-                //confirmacion de eliminacion
-                do
-                {
-                    printf("Desea eliminar el registro de %s (S/N): \n",eliminado.nombre);
-                    scanf(" %c",&desition);
-                    int conf=1;
-                    if(desition=='S'||desition=='s'){
-                        send(clientfd,&conf,sizeof(int),0);
-                        if (r<0){
-                            perror("\nError send() caso 2");
-                            exit(EXIT_FAILURE);
-                        }
-                        break; 
-                    }
-                    if(desition=='n' && desition=='N'){
-                        conf=-1;
-                        send(clientfd,&conf,sizeof(int),0);
-                        printf("Operacion abortada \n");
-                    }
-                }while(desition!='n' && desition!='N');
-                r=recv(clientfd,buffer,sizeof(int),0);
-                if(r<0){
-                    perror("\n-->Error en recv() inicial");
-                    exit(-1);
-                }
-                printf("Oprima cualquier tecla para continuar");
+                //llamado a la funcion eliminar
+                eliminar();
+                printf("\nOprima cualquier tecla para continuar");
                 mygetch();
                 break;
             case 4:;
@@ -259,54 +222,29 @@ int main(int argc, char const *argv[])
                 memset(nombre,'\0',32);
                 scanf("%s",&nombre);
                 strcat(nombre,"\n");
+                //envio de la cadena nombre a buscar al servidor
                 r=send(clientfd,&nombre,32,0);
-                if(r<0){
-                    perror("Error send() nombre");
-                    exit(-1);
+                if (r<0){
+                    perror("\nError send() caso 4");
+                    exit(EXIT_FAILURE);
                 }
-                int count = 0;
-                r=recv(clientfd,&count,sizeof(int),0);
-                if(r<0){
-                    perror("Error recv() count");
-                    exit(-1);
-                }
-                lista=malloc((count+1)*sizeof(struct dogType));
-                if(count>0){
-                    r=recv(clientfd,&lista,count*sizeof(struct dogType),0);
-                    if(r<0){
-                        perror("Error recv() lista");
-                        exit(-1);
-                    }
-                    for (size_t i = 0; i < count; i++)
-                    {
-                        printf("\nID: %d\n",lista[i].id);
-                        printf("Nombre: %s\n",lista[i].nombre);
-                        printf("Tipo: %s \n",lista[i].tipo);
-                        printf("Edad: %d \n", lista[i].edad);
-                        printf("Raza: %s \n", lista[i].raza);
-                        printf("Estatura: %d \n", lista[i].estatura);
-                        printf("Peso: %.2f \n", lista[i].peso);
-                        printf("Sexo: %c \n", lista[i].sexo);
-                        printf("Hash: %d \n", lista[i].hash);
-                        printf("Next: %d \n", lista[i].next);
-                    }
-                }else{
-                    printf("No hay registros que coincidan");
-                }
-                printf("%d %d\n",r,count*sizeof(struct dogType));
-                free(lista);
-                printf("Oprima cualquier tecla para continuar");
+                //llamada a la funcion buscar
+                Buscar();
+                printf("\nOprima cualquier tecla para continuar");
                 mygetch();
                 break;
             default:
                 printf("opcion no valida");
         }
     }while(opcion!=0);
+    //cerramos el stream
     close(clientfd);
     return 0;
 }
 int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,float peso, char sexo)
 {
+    //se crea una nueva estructura dogType con la informacion ingresada
+    //utilizando memset para limpiar las variables
     struct dogType  Nuevo;
     Nuevo.id=0;
     memset(Nuevo.nombre,'\0',32);
@@ -321,8 +259,11 @@ int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,f
     Nuevo.sexo=sexo;
     Nuevo.hash=0;
     Nuevo.next=0;
+    //se envia la esctructura al servidor para su ingreso
     send(clientfd,&Nuevo,sizeof(struct dogType),0);
+    //se recibe la estructura escrita para confirmar que se ingreso correctamente
     recv(clientfd,&Nuevo,sizeof(struct dogType),0);
+    //imprimimos el nuevo dogType ingresado
     printf("\nID: %d\n",Nuevo.id);
     printf("Nombre: %s\n",Nuevo.nombre);
     printf("Tipo: %s \n",Nuevo.tipo);
@@ -335,231 +276,217 @@ int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,f
     printf("Next: %d \n", Nuevo.next);
 }
 
-int Listar(int Hash){
-    struct dogType prueba;
-    //lee la tabla hash y la carga en el arreglo tabla
-    fseek(tablaHash,0,SEEK_SET);
-    fread(&tabla,sizeof(tabla),1,tablaHash);
-    //comprobacion de la existencia del hash y retorno en caso contrario
-    if(tabla[Hash]==-1){
-        return 1;
-    }
-    //busqueda en el archivo de la primera posicion de la lista encadenada
-    fseek(myf,(tabla[Hash])*sizeof(struct dogType),SEEK_SET);
-    fread(&prueba,sizeof(struct dogType),1,myf);
-    //conteo de cantidad de elementos en la lista encadenada
-    n=1;
-    while(prueba.next>0)
-    {
-        n++;
-        fseek(myf,(prueba.next)*sizeof(struct dogType),SEEK_SET);
-        fread(&prueba,sizeof(struct dogType),1,myf);
-    }
-    //reserva de memoria de la lista encadenada y guardado en lista
-    lista=(struct dogType *)malloc(n*sizeof(struct dogType));
-    fseek(myf,(tabla[Hash])*sizeof(struct dogType),SEEK_SET);
-    fread(&lista[0],sizeof(struct dogType),1,myf);
-    n=0;
-    while(lista[n].next>0)
-    {
-        fseek(myf,(lista[n].next)*sizeof(struct dogType),SEEK_SET);
-        fread(&lista[++n],sizeof(struct dogType),1,myf);
-    }    
-    return 0;
-}
-int eliminar (int id)
-{
-    struct dogType buffer, deleted;
-    int posdel=id;
-    //viajar a la posicion de id si existe o a la posicion menos los eliminados
-    if(id>=total){
-        fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
-        //se busca en el archivo a partir de la posicion actual y se mueve hasta el registro con el id correspondiente    
-        fread(&deleted,sizeof(struct dogType),1,myf);
-        while(deleted.id!=id)
+int verRegistro(){
+    struct dogType Nuevo;
+    char desition=0;
+    //se recibe la estructura correspondiente al id enviado
+    recv(clientfd,&Nuevo,sizeof(struct dogType),0);
+    //se imprime la informacion de la estructura
+    printf("\nID: %d\n",Nuevo.id);
+    printf("Nombre: %s\n",Nuevo.nombre);
+    printf("Tipo: %s \n",Nuevo.tipo);
+    printf("Edad: %d \n", Nuevo.edad);
+    printf("Raza: %s \n", Nuevo.raza);
+    printf("Estatura: %d \n", Nuevo.estatura);
+    printf("Peso: %.2f \n", Nuevo.peso);
+    printf("Sexo: %c \n", Nuevo.sexo);
+    printf("Hash: %d \n", Nuevo.hash);
+    printf("Next: %d \n", Nuevo.next);
+    //confirmacion de apertura de historia clinica
+    int c=0;
+    do
+    {                 
+        printf("Desea ver la historia clinica de %s (S/N)\n",Nuevo.nombre);
+        scanf(" %c",&desition);
+        if(desition=='S'||desition=='s')
         {
-            fread(&deleted,sizeof(struct dogType),1,myf);
+            c=1;
+            break;
         }
-    }else{
-        fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
-        //se busca en el archivo a partir de la posicion actual y se mueve hasta el registro con el id correspondiente    
-        fread(&deleted,sizeof(struct dogType),1,myf);
-        while(deleted.id!=id)
-        {
-            fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
-            fread(&deleted,sizeof(struct dogType),1,myf);
-        }
+        if(desition!='N'&&desition!='n')printf("Opcion no valida");
+    }while(desition!='n' && desition!='N');
+    //enviar a servidor si se quiere o no abrir la historia
+    r=send(clientfd,&c,sizeof(int),0);
+    if(r<0){
+        perror("\n-->Error en send historia clinica");
+        exit(-1);
     }
-    
-    //se crea la lista encadenada del hash del id a borrar y se verifica si su tamaño es 1
-    Listar(deleted.hash);
-    if(n==1)
-    {
-        //si solo hay uno en la lista ecadenada se elimina de la tabla hash esa posicion
-        tabla[deleted.hash]=-1;
-    }else
-    {
-        //si hay mas se verifica en que posicion de la lista encadenada esta el id a borrar
-        int pos=0;
-        while(pos<=n)
-        {
-            if(lista[pos++].id==id)break;
+    int e;
+    if(c==1){
+        //recibede servidor informacion sobre la existencia de la historia clinica
+        r= recv(clientfd,&e,sizeof(int),0);
+        if(r<0){
+            perror("\n-->Error en recv historia clinica");
+            exit(-1);
         }
-        if(pos==1)
-        {
-            //si la posicion es la primera se remplaza en la tabla hash con el next del eliminado
-            tabla[deleted.hash]=deleted.next;
-        }else
-        {
-            //vamos a la posicion en el archivo del id de la posicion anterior al que vamos a eliminar 
-            fseek(myf,sizeof(struct dogType)*lista[pos-2].id,SEEK_SET);
-            fread(&buffer,sizeof(struct dogType),1,myf);
-            //verificar que corresponda la posicion con el id de la posicion anterior al que vamos a eliminar
-            while(buffer.id!=lista[pos-2].id)
-            {
-                fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
-                fread(&buffer,sizeof(struct dogType),1,myf);
+        FILE* historia;
+        char comando[32];
+        if(e==0){
+            char info[1024];
+            //abrimos un archivo para guardar la historia del servidor
+            sprintf(comando,"%d.txt",Nuevo.id);
+            historia = fopen(comando,"w");
+            int sz=0;
+            r= recv(clientfd,&sz,sizeof(int),0);
+            if(r<0){
+                perror("\n-->Error en recv info historia clinica");
+                exit(-1);
             }
-            fseek(myf,-sizeof(struct dogType),SEEK_CUR);
-            //reemplazamos el next del id anterior por el next del eliminado
-            lista[pos-2].next=lista[pos-1].next;
-            fwrite(&lista[pos-2],sizeof(struct dogType),1,myf);
+            do{                
+                memset(info,'\0',1024);
+                //recibe todos los caracteres de la historia clinica desde servidor
+                r= recv(clientfd,&info,sizeof(char)*sz,MSG_WAITALL);
+                if(r<0){
+                    perror("\n-->Error en recv info historia clinica");
+                    exit(-1);
+                }
+                fprintf(historia,"%s",info);
+                r= recv(clientfd,&sz,sizeof(int),0);
+                if(r<0){
+                    perror("\n-->Error en recv info historia clinica");
+                    exit(-1);
+                }
+            }while(sz>0);
+            fclose(historia);
         }
-        
-    }
-    //se cierra el archivo para aegurarnos de que los cambios hechos se guarden
-    fclose(myf);
-    myf=fopen("dataDogs.dat","rb+");
-    //se copia el archivo con la funcion cp del sistema operativo
-    system("cp dataDogs.dat dataDogs1.dat");
-    //se habre la copia del archivo
-    FILE *New= fopen("dataDogs1.dat","rb+");
-    //ir a la posicion del id del eliminado en el en datadogs y en su copia, o al ultimo registro si el id es mayor a la cantidad de registros
-    if(id>total){
-        fseek(myf,-sizeof(struct dogType),SEEK_END);
-        fseek(New,-sizeof(struct dogType),SEEK_END);
-        posdel=total-1;
-    }else{
-        fseek(myf,sizeof(struct dogType)*id,SEEK_SET);
-        fseek(New,sizeof(struct dogType)*id,SEEK_SET);
-    }   
-    fread(&buffer,sizeof(struct dogType),1,myf);
-    //verificamos que la posicion corresponda con el id a eliminar
-    while (buffer.id!=id)
-    {
-        //se corrige la posicion del id a eliminar 
-        posdel--;
-        fseek(myf,-sizeof(struct dogType)*2,SEEK_CUR);
-        fseek(New,-sizeof(struct dogType),SEEK_CUR);
-        fread(&buffer,sizeof(struct dogType),1,myf);
-    }    
-    //se escriben todas las posiciones despues del id a eliminar en el nuevo archivo 
-    //saltando el eliminado y reduciendo en uno el next de cada uno
-    while(!feof(myf))
-    {
-        fread(&buffer,sizeof(struct dogType),1,myf);
-        buffer.next--;
-        fwrite(&buffer,sizeof(struct dogType),1,New);
-    }
-    //truncamos el archivo nuevo con el tamaño del archivo original menos una estructura
-    fseek(New, 0L, SEEK_END);
-    int sz=ftell(myf)-sizeof(struct dogType);
-    ftruncate(fileno(New),sz);
-    //eliminamos el archivo anterior con ma funcion rm del sistema operativo
-    system("rm dataDogs.dat");
-    //guardamos los cambios en el nuevo archivo y lo renombramos con el nombre del antiguo
-    //utilizando la funcion mv del sistema operativo
-    fclose(New);
-    system("mv dataDogs1.dat dataDogs.dat");
-    //liberamos la memoria de lista 
-    free(lista);
-    //añadimos en el archivo eliminados el id de la estructura eliminada
-    fseek(eliminados,0,SEEK_END);
-    fwrite(&id,sizeof(int),1,eliminados);
-    struct dogType actual; 
-    //reabriendo dataDogs.dat para que tome el nuevo archivo
-    fclose(myf);
-    myf=fopen("dataDogs.dat","rb+");
-    //reducimos en 1 todos los next de las posiciones anteriores a la eliminada cuyo next
-    //va despues de la eliminada
-    fseek(myf,0,SEEK_SET);
-    fread(&actual,sizeof(struct dogType),1,myf);
-    for (size_t i = 0; actual.id<id&&!feof(myf); i++){
-        if(actual.next>id){
-            actual.next--;
-            fseek(myf,-sizeof(struct dogType),SEEK_CUR);
-            fwrite(&actual,sizeof(struct dogType),1,myf);
+        //abrimos la historia clinica para que el usuario pueda editarla
+        sprintf(comando,"nano %d.txt",Nuevo.id);
+        system(comando);
+        sprintf(comando,"%d.txt",Nuevo.id);
+        historia = fopen(comando,"r");
+        if(historia==NULL){
+            //le decimos a servidor que no se va a enviar nueva informacion para la historia
+            e = 1;
+            r=send(clientfd,&e,sizeof(int),0);
+            if(r<0){
+                perror("error envio");
+                exit(-1);
+            }
+            return 0;
         }
-        fread(&actual,sizeof(struct dogType),1,myf);
+        //le decimos a servidor que si se va a enviar nueva informacion para la historia
+        e = 0;
+        r=send(clientfd,&e,sizeof(int),0);
+        if(r<0){
+            perror("error envio");
+            exit(-1);
+        }
+        fseek(historia, 0L, SEEK_SET);
+        char filedata[1024];
+        int sz = fread(&filedata,sizeof(char),1024,historia);
+        while(sz>0){
+            //envio a servidor de todos los caracteres en la historia clinica
+            r=send(clientfd,&sz,sizeof(int),0);
+            if(r<0){
+                perror("error envio");
+                exit(-1);
+            }
+            r=send(clientfd,&filedata,sizeof(char)*sz,0);
+            if(r<0){
+                perror("error envio");
+                exit(-1);
+            }
+            sz =fread(&filedata,sizeof(char),1024,historia);
+        }
+        sz=0;
+        r=send(clientfd,&sz,sizeof(int),0);
+        if(r<0){
+            perror("error envio");
+            exit(-1);
+        }
+        fclose(historia);
+        //eliminacion del archivo creado para interactuar con el cliente     
+        sprintf(comando,"rm %d.txt",Nuevo.id);
+        system(comando);   
     }
-    //actualizamos la tabla hash reduciendo en uno todos los que estan despues de eliminado
-    for (size_t i = 0; i < 1010; i++)
+
+}
+int eliminar ()
+{
+    struct dogType eliminado;
+    char desition;
+    //recibe la estrutura correspondiente al id a eliminar
+    r=recv(clientfd,&eliminado,sizeof(struct dogType),0);
+    if(r<0){
+        perror("\n-->Error en recv() estructura");
+        exit(-1);
+    }
+    //se imprime la informacion de la estructura
+    printf("\n Datos del registro que desea eliminar: \n");
+    printf("\nID: %d\n",eliminado.id);
+    printf("Nombre: %s\n",eliminado.nombre);
+    printf("Tipo: %s \n",eliminado.tipo);
+    printf("Edad: %d \n", eliminado.edad);
+    printf("Raza: %s \n", eliminado.raza);
+    printf("Estatura: %d \n", eliminado.estatura);
+    printf("Peso: %.2f \n", eliminado.peso);
+    printf("Sexo: %c \n", eliminado.sexo);
+    printf("Hash: %d \n", eliminado.hash);
+    printf("Next: %d \n", eliminado.next);
+    //confirmacion de eliminacion
+    do
     {
-        if(tabla[i]>posdel)tabla[i]--;
+        printf("Desea eliminar el registro de %s (S/N): \n",eliminado.nombre);
+        scanf(" %c",&desition);
+        int conf=1;
+        if(desition=='S'||desition=='s'){
+            //envio de la confimarcion positiva al servidor
+            send(clientfd,&conf,sizeof(int),0);
+            if (r<0){
+                perror("\nError send() caso 2");
+                exit(EXIT_FAILURE);
+            }
+            break; 
+        }
+        if(desition=='n' && desition=='N'){
+            conf=-1;
+            //envio de la confimarcion negativa al servidor
+            send(clientfd,&conf,sizeof(int),0);
+            printf("Operacion abortada \n");
+        }
+    }while(desition!='n' && desition!='N');
+    //recibe confirmacion del fin de la eliminacion
+    r=recv(clientfd,buffer,sizeof(int),0);
+    if(r<0){
+        perror("\n-->Error en recv() inicial");
+        exit(-1);
     }
-    fseek(tablaHash,0,SEEK_SET);
-    fwrite(&tabla,sizeof(tabla),1,tablaHash);
-    //se suma uno al offset y se actualizan los totales
-    offset++;
-    total--;
     
 }
 
-int Buscar(char nombre[32]){
-    int registros=0;
-    //se genera la lista del hash del nombre y se verifica su existencia
-    int con= Listar(PolyHash(nombre));
-    if(con==1){
-        printf("%s no existe \n",nombre);
-        return 0;
+int Buscar(){
+    int count;
+    //recibe la cantidad de regitros que corresponden con el nombre
+    r=recv(clientfd,&count,sizeof(int),0);
+    if(r<0){
+        perror("Error recv() count");
+        exit(-1);
     }
-    for(int i=0;i<=n;i++)
-    {
-        //se imprimen los registros de la lista ecadenada cuyo nombre corresponda con el buscado 
-        //y se contabilizan la cantidad de registros que coninciden
-        if(strcoll(lista[i].nombre,nombre)==0){
-            registros++;
-            printf("\nID: %d\n",lista[i].id);
-            printf("Nombre: %s\n",lista[i].nombre);
-            printf("Tipo: %s \n",lista[i].tipo);
-            printf("Edad: %d \n", lista[i].edad);
-            printf("Raza: %s \n", lista[i].raza);
-            printf("Estatura: %d \n", lista[i].estatura);
-            printf("Peso: %.2f \n", lista[i].peso);
-            printf("Sexo: %c \n", lista[i].sexo);
-            printf("Hash: %d \n", lista[i].hash);
-            printf("Next: %d \n", lista[i].next);
+    //ciclo para recibir las estruturas
+    struct dogType Element;
+    if(count>0){                    
+        for (size_t i = 0; i < count; i++)
+        {
+            //recibimos una estructura a la vez y se imprime la informacion
+            r=recv(clientfd,&Element,sizeof(struct dogType),MSG_WAITALL);
+            if(r<0){
+                perror("Error recv() lista");
+                exit(-1);
+            }
+            printf("\nID: %d\n",Element.id);
+            printf("Nombre: %s\n",Element.nombre);
+            printf("Tipo: %s \n",Element.tipo);
+            printf("Edad: %d \n", Element.edad);
+            printf("Raza: %s \n", Element.raza);
+            printf("Estatura: %d \n", Element.estatura);
+            printf("Peso: %.2f \n", Element.peso);
+            printf("Sexo: %c \n", Element.sexo);
+            printf("Hash: %d \n", Element.hash);
+            printf("Next: %d \n", Element.next);
         }
-        
+    }else{
+        printf("No hay registros que coincidan");
     }
-    //si la cantidad de registros que coinciden es 0 se imprime mensaje de que no existe 
-    if(registros==0)printf("%s no existe \n",nombre);
-    // se libera la memoria de la lista
-    free(lista);
-}
-
-int PolyHash (char cadena[])
-{
-    //se tranforman todas las letras de la cadena en mayusuculas
-    int i = 0;
-    while (cadena[i] != '\0') 
-    {
-        if (cadena[i] >= 'a' && cadena[i] <= 'z') {
-            cadena[i] = cadena[i] - 32;
-        }
-    i++;
-    }
-    //se calcula el hash ignorando caracteres especiales
-    int Hash=0;
-    for (int o = 31; o >= 0; o--)
-    {
-        if(cadena[o] >= 'A' && cadena[o] <= 'Z') Hash=(Hash*31+(int)cadena[o])% 1009;
-    }
-    //se utiliza valor absoluto en el hash y se retorna el valor
-    if(Hash<0){
-        Hash=-Hash;
-    }
-    return Hash;        
 }
 //funcion tomada de https://faq.cprogramming.com/cgi-bin/smartfaq.cgi?id=1043284385&answer=1042856625
 int mygetch ( void ) 

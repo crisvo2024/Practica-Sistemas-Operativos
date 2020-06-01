@@ -8,9 +8,13 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <pthread.h>
+#include <signal.h> 
+#include <time.h>
 
 #define PORT 3535
 #define BACKLOG 2
+#define MAX_THREADS 33
 
 struct dogType{
     int id;
@@ -26,37 +30,242 @@ struct dogType{
     };
 
 int PolyHash (char cadena[]);
-int ingresar(struct dogType n);
+int ingresar(struct dogType n,int clientfd);
 int Listar(int Hash);
-int eliminar (int id);
-int Buscar(char nombre[32]);
+int eliminar (int id, int clientefd);
+int Buscar(char nombre[32],int clientfd);
 int mygetch ( void );
-int verRegistro(int id);
+int verRegistro(int id, int clientefd);
 FILE *myf,*tablaHash,*eliminados,*consultas;
 int n, tabla[1010],offset,total;
 struct dogType *lista;
 int maxid;
 //nuevo
-int serverfd, clientfd, r, opt = 1;
+int serverfd, r, opt = 1;
 struct sockaddr_in server, client;
 socklen_t tamano;
-pid_t pid;
+pthread_t hilo[MAX_THREADS];
+int numThreads;
+void sighandler(int signum);
 
-int main(int argc, char const *argv[])
-{
-     //inicializacion de variables y apertura de archivos
+char fecha[64];
+
+int* atender(void *datos){
+    //incicializacion de variables, archivos y el stream
+    int clientfd =*((int *)datos);
     int opcion=0;
+    time_t date=time(&date);
+    struct tm timeInfo;
     myf = fopen("dataDogs.dat","rb+");
     tablaHash = fopen("TablaHash.dat","rb+");
     eliminados = fopen("Eliminados.dat","rb+");
-    consultas= fopen("serverDogs.log","rb+");
+    
     int deleted, id;
     int salir=0;
     char continuar;
     offset=-1;
     char nombre[32];
     struct dogType Anterior;
+    int buffer;
+    int datos_envio[2];
+    while(!feof(eliminados))
+    {
+        fread(&deleted,sizeof(int),1,eliminados);
+        offset++;
+    }
+    fseek(myf,-sizeof(struct dogType),SEEK_END);
+    fread(&Anterior,sizeof(struct dogType),1,myf);
+    maxid=Anterior.id;
+    total=Anterior.id+1-offset;
+    datos_envio[0]=maxid;
+    datos_envio[1]=total;
+    //envio del total de registros y el id maximo al cliente
+    r=send(clientfd,datos_envio,2*sizeof(int),0);
+    if(r < 0){
+        perror("\n-->Error en send(): ");
+        exit(-1);
+    }
+        do{ 
+            //recibe la opcion del menu del cliente
+            r=recv(clientfd,&buffer,sizeof(int),0);
+            if(r<0){
+                perror("error receive"); 
+                exit(EXIT_FAILURE);
+            }
+            switch (buffer)
+            {
+            case 1:;
+                //recibe la estructura a guardar
+                struct dogType n;
+                r=recv(clientfd,&n,sizeof(struct dogType),0);
+                if(r<0){
+                perror("error receive"); 
+                exit(EXIT_FAILURE);
+                }
+                //llamamos la funcion ingresar con la estructura n
+                ingresar(n, clientfd);
+                //escritura de la operacion en el log
+                consultas= fopen("serverDogs.log","a");
+                timeInfo=*localtime(&date);
+                fprintf(consultas,"\n[ fecha: %d-%d-%d %2d:%2d:%2d ]",timeInfo.tm_year +1900,timeInfo.tm_mon+1,timeInfo.tm_mday,timeInfo.tm_hour,timeInfo.tm_min,timeInfo.tm_sec);
+                fprintf(consultas,"[ cliente 127.0.0.1 ]");
+                fprintf(consultas,"Insercion");
+                fprintf(consultas,"registro: %d\n",n.id);
+                fclose(consultas); 
+                break;
+            case 2:
+                //verificacion de cantidad de registros eliminados
+                while(!feof(eliminados))
+                {
+                    fread(&deleted,sizeof(int),1,eliminados);
+                    offset++;
+                }
+                fseek(myf,-sizeof(struct dogType),SEEK_END);
+                fread(&Anterior,sizeof(struct dogType),1,myf);
+                maxid=Anterior.id;
+                total=Anterior.id+1-offset;
+                datos_envio[0]=maxid;
+                datos_envio[1]=total;
+                //envio del total de registros y el id maximo al cliente
+                r=send(clientfd,datos_envio,2*sizeof(int),0);
+                if(r < 0){
+                    perror("\n-->Error en send(): ");
+                    exit(-1);
+                }
+                do{
+                    //recibe el id a buscar
+                    salir=0;
+                    r=recv(clientfd,&id,sizeof(int),0);
+                    if(r<0){
+                        perror("error receive"); 
+                        exit(EXIT_FAILURE);
+                    }
+                    //confirmamos que el id no este entre los eliminados
+                    fseek(eliminados,0,SEEK_SET);
+                    while(!feof(eliminados))
+                    {
+                        fread(&deleted,sizeof(int),1,eliminados);
+                        if(deleted==id||id>maxid||id<0){
+                            printf("No hay mascota con el id %d \n", id);
+                            salir=1;
+                            break;
+                        }   
+                    }
+                    //enviamos a cliente la validez del id
+                    r=send(clientfd,&salir,sizeof(int),0);
+                    if(r < 0){
+                        perror("\n-->Error en send(): ");
+                        exit(-1);
+                    }
+                    //el ciclo continua hasta que el cliente envie un id valido
+                }while(salir!=0);
+                //llamamos la funcion verRegistro con el id
+                verRegistro(id, clientfd);
+                //se registra la operacion en el log
+                consultas= fopen("serverDogs.log","a");
+                timeInfo=*localtime(&date);
+                fprintf(consultas,"\n[ fecha: %d-%d-%d %2d:%2d:%2d ]",timeInfo.tm_year +1900,timeInfo.tm_mon+1,timeInfo.tm_mday,timeInfo.tm_hour,timeInfo.tm_min,timeInfo.tm_sec); 
+                fprintf(consultas,"[ cliente 127.0.0.1 ]");
+                fprintf(consultas,"[lectura]");
+                fprintf(consultas,"[registro: %d]\n",id);
+                fclose(consultas);
+                break;
+            case 3:
+                //verificacion de cantidad de registros eliminados
+                while(!feof(eliminados))
+                {
+                    fread(&deleted,sizeof(int),1,eliminados);
+                    offset++;
+                }
+                fseek(myf,-sizeof(struct dogType),SEEK_END);
+                fread(&Anterior,sizeof(struct dogType),1,myf);
+                maxid=Anterior.id;
+                total=Anterior.id+1-offset;
+                datos_envio[0]=maxid;
+                datos_envio[1]=total;
+                //envio del total de registros y el id maximo al cliente
+                r=send(clientfd,datos_envio,2*sizeof(int),0);
+                if(r < 0){
+                    perror("\n-->Error en send(): ");
+                    exit(-1);
+                }
+                do{
+                    //recibe el id a eliminar
+                    salir=0;
+                    r=recv(clientfd,&id,sizeof(int),0);
+                    if(r<0){
+                        perror("error receive"); 
+                        exit(EXIT_FAILURE);
+                    }
+                    //confirmamos que el id no este entre los eliminados
+                    fseek(eliminados,0,SEEK_SET);
+                    while(!feof(eliminados))
+                    {
+                        fread(&deleted,sizeof(int),1,eliminados);
+                        if(deleted==id||id>maxid||id<0){
+                            printf("No hay mascota con el id %d \n", id);
+                            salir=1;
+                            break;
+                        }   
+                    }
+                    //enviamos a cliente la validez del id
+                    r=send(clientfd,&salir,sizeof(int),0);
+                    if(r < 0){
+                        perror("\n-->Error en send(): ");
+                        exit(-1);
+                    }
+                    //el ciclo continua hasta que el cliente envie un id valido
+                }while(salir!=0);
+                //llamamos la funcion verRegistra para confirmar con el cliente
+                verRegistro(id, clientfd);
+                int conf;
+                //recibe de cliente la confirmacion de eliminacion
+                r=recv(clientfd,&conf,sizeof(int),0);
+                if(r<sizeof(int)){
+                        perror("error receive"); 
+                        exit(EXIT_FAILURE);
+                }
+                if(conf==1){
+                    //llamar la funcion eliminar con el id
+                    eliminar(id,clientfd);
+                    //resgistro de la operacion en el log
+                    consultas= fopen("serverDogs.log","a");
+                    timeInfo=*localtime(&date);
+                    fprintf(consultas,"\n[ fecha: %d-%d-%d %2d:%2d:%2d ]",timeInfo.tm_year +1900,timeInfo.tm_mon+1,timeInfo.tm_mday,timeInfo.tm_hour,timeInfo.tm_min,timeInfo.tm_sec);
+                    fprintf(consultas,"[ cliente 127.0.0.1 ]");
+                    fprintf(consultas,"[borrado]");
+                    fprintf(consultas,"[registro: %d ]\n",id);
+                    fclose(consultas);
+                }
+                break;
+            case 4:;
+                char nombreBusqueda[32];
+                r=recv(clientfd,&nombreBusqueda,sizeof(char)*32,MSG_WAITALL);
+                if(r<0){
+                        perror("error receive de busqueda"); 
+                        exit(EXIT_FAILURE);
+                }
+                Buscar(nombreBusqueda,clientfd);
+                consultas= fopen("serverDogs.log","a");
+                fprintf(consultas,"\n[ %s ]",fecha);
+                fprintf(consultas,"[ cliente 127.0.0.1 ]");
+                fprintf(consultas,"[busqueda]");
+                fprintf(consultas,"[cadena buscada: %s ]\n",nombreBusqueda);
+                fclose(consultas);
+                break;
+            default:
+                break;
+            }
+        }while(buffer!=0);
+        
+        close(clientfd);
 
+}
+
+int main(int argc, char const *argv[])
+{
+     //inicializacion del socket
+    int clientfd;
     serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if(serverfd < 0){
         perror("\n-->Error en socket():");
@@ -81,166 +290,45 @@ int main(int argc, char const *argv[])
         perror("\n-->Error en Listen(): ");
         exit(-1);
     }
-    
-    clientfd = accept(serverfd, (struct sockaddr *)&client, &tamano);
-    if(clientfd < 0)
-    {
-        perror("\n-->Error en accept: ");
-        exit(-1);
-    }
-
-    //pid=fork();
-    pid=0;
-    if (pid == -1){  //handle errors
-        perror("error fork"); 
-        exit(EXIT_FAILURE); 
-    }
-    if(pid==0){// hijo
-        int buffer;
-        int datos_envio[2];
-        do{
-            r=recv(clientfd,&buffer,sizeof(int),0);
-            if(r<0){
-                perror("error receive"); 
-                exit(EXIT_FAILURE);
-            }
-            switch (buffer)
+    //se añade la función signal para que se cierren los archivos en caso de interrupción del servidor
+    signal(SIGINT,sighandler);
+    int i=0;
+    while(1){
+        clientfd = accept(serverfd, (struct sockaddr *)&client, &tamano);
+        if(clientfd < 0)
+        {
+            perror("\n-->Error en accept: ");
+            exit(-1);
+        }
+        //verifica que no halla más de 32 clientes
+        if(i==MAX_THREADS){
+            int *rh0;
+            pthread_join(hilo[i], (void **)&rh0);
+            if(r != 0)
             {
-            case 1:;
-                struct dogType n;
-                r=recv(clientfd,&n,sizeof(struct dogType),0);
-                if(r<0){
-                perror("error receive"); 
-                exit(EXIT_FAILURE);
-                }
-                ingresar(n);
-                break;
-            case 2:
-                //verificacion de cantidad de registros eliminados
-                while(!feof(eliminados))
-                {
-                    fread(&deleted,sizeof(int),1,eliminados);
-                    offset++;
-                }
-                fseek(myf,-sizeof(struct dogType),SEEK_END);
-                fread(&Anterior,sizeof(struct dogType),1,myf);
-                maxid=Anterior.id;
-                total=Anterior.id+1-offset;
-                datos_envio[0]=maxid;
-                datos_envio[1]=total;
-                r=send(clientfd,datos_envio,2*sizeof(int),0);
-                if(r < 0){
-                    perror("\n-->Error en send(): ");
-                    exit(-1);
-                }
-                do{
-                    salir=0;
-                    r=recv(clientfd,&id,sizeof(int),0);
-                    if(r<0){
-                        perror("error receive"); 
-                        exit(EXIT_FAILURE);
-                    }
-                    fseek(eliminados,0,SEEK_SET);
-                    while(!feof(eliminados))
-                    {
-                        fread(&deleted,sizeof(int),1,eliminados);
-                        if(deleted==id||id>maxid||id<0){
-                            printf("No hay mascota con el id %d \n", id);
-                            salir=1;
-                            break;
-                        }   
-                    }
-                    r=send(clientfd,&salir,sizeof(int),0);
-                    if(r < 0){
-                        perror("\n-->Error en send(): ");
-                        exit(-1);
-                    }
-                }while(salir!=0);
-                verRegistro(id);
-                break;
-            case 3:
-                //verificacion de cantidad de registros eliminados
-                while(!feof(eliminados))
-                {
-                    fread(&deleted,sizeof(int),1,eliminados);
-                    offset++;
-                }
-                fseek(myf,-sizeof(struct dogType),SEEK_END);
-                fread(&Anterior,sizeof(struct dogType),1,myf);
-                maxid=Anterior.id;
-                total=Anterior.id+1-offset;
-                datos_envio[0]=maxid;
-                datos_envio[1]=total;
-                r=send(clientfd,datos_envio,2*sizeof(int),0);
-                if(r < 0){
-                    perror("\n-->Error en send(): ");
-                    exit(-1);
-                }
-                do{
-                    salir=0;
-                    r=recv(clientfd,&id,sizeof(int),0);
-                    if(r<0){
-                        perror("error receive"); 
-                        exit(EXIT_FAILURE);
-                    }
-                    fseek(eliminados,0,SEEK_SET);
-                    while(!feof(eliminados))
-                    {
-                        fread(&deleted,sizeof(int),1,eliminados);
-                        if(deleted==id||id>maxid||id<0){
-                            printf("No hay mascota con el id %d \n", id);
-                            salir=1;
-                            break;
-                        }   
-                    }
-                    r=send(clientfd,&salir,sizeof(int),0);
-                    if(r < 0){
-                        perror("\n-->Error en send(): ");
-                        exit(-1);
-                    }
-                }while(salir!=0);
-                verRegistro(id);
-                int conf;
-                r=recv(clientfd,&conf,sizeof(int),0);
-                if(r<sizeof(int)){
-                        perror("error receive"); 
-                        exit(EXIT_FAILURE);
-                }
-                if(conf==1){
-                    eliminar(id);
-                }
-                break;
-            case 4:;
-                char nombreBusqueda[32];
-                r=recv(clientfd,&nombreBusqueda,sizeof(char)*32,0);
-                if(r<0){
-                        perror("error receive de busqueda"); 
-                        exit(EXIT_FAILURE);
-                }
-                Buscar(nombreBusqueda);
-
-                break;
-            default:
-                break;
+                perror("\n-->pthread_join error: ");
+                exit(-1);
             }
-        }while(buffer!=0);
-        
-        close(clientfd);
-        close(serverfd); 
-        exit(0);
-    
-    }else{//padre
-        exit(0);
+        }     
+        //crea el hilo para atender al cliente  
+        r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)&clientfd);
+        if(r != 0)
+        {
+            perror("\n-->pthread_create error: ");
+            exit(-1);
+        }  
     }
-
-   
-    fclose(myf);
-    fclose(tablaHash);
-    fclose(eliminados);
-    fclose(consultas);  
     return 0;
 }
-int ingresar(struct dogType Nuevo)
+void sighandler(int signum){
+    //se cierran los servidores y los archivos
+    fclose(myf);    
+    close(serverfd); 
+    fclose(tablaHash);
+    fclose(eliminados);
+    exit(0);
+}
+int ingresar(struct dogType Nuevo, int clientfd)
 {
     struct dogType Anterior;
     int id, deleted;
@@ -288,8 +376,9 @@ int ingresar(struct dogType Nuevo)
     total++;
     maxid=id;
 }
-int verRegistro(int id){
+int verRegistro(int id, int clientfd){
     struct dogType Nuevo;
+    int buff;
     //viajar a la posicion id en el archivo si existe, sino a la posicion menos los eliminados
     if(id>=total){
         fseek(myf,sizeof(struct dogType)*(id-offset),SEEK_SET);
@@ -309,10 +398,94 @@ int verRegistro(int id){
             fread(&Nuevo,sizeof(struct dogType),1,myf);
         }
     }
+    //enviamos al cliente la estructura corespondiente al id
     r=send(clientfd,&Nuevo,sizeof(struct dogType),0);
     if(r<0){
         perror("error envio");
         exit(-1);
+    }
+    //recibe de cliente el deseo de ver la historia clinica
+    r=recv(clientfd,&buff,sizeof(int),0);
+    if(r<0){
+        perror("error recv() ");
+        exit(-1);
+    }
+    if(buff==1){
+        char comando[32];
+        sprintf(comando,"%d_server.txt",Nuevo.id);
+        //busqueda de la historia correspondiente al id
+        FILE *historia=fopen(comando,"rb");
+        int respuesta=0;
+        if(historia==NULL){
+            respuesta=1;
+        }
+        //envio al cliente sobre la existencia del archivo
+        r=send(clientfd,&respuesta,sizeof(int),0);
+        if(r<0){
+            perror("error envio");
+            exit(-1);
+        }
+        if(historia!=NULL){
+            char filedata[1024];
+            fseek(historia, 0L, SEEK_SET);
+            int sz=0;
+            while((sz=fread(&filedata,sizeof(char),1024,historia))>0){
+                //envio a cliente de todos lo caracteres dentro de la historia clinica
+                r=send(clientfd,&sz,sizeof(int),0);
+                if(r<0){
+                    perror("error envio");
+                    exit(-1);
+                }
+                r=send(clientfd,&filedata,sizeof(char)*sz,0);
+                if(r<0){
+                    perror("error envio");
+                    exit(-1);
+                }
+            }
+            sz=0;
+            r=send(clientfd,&sz,sizeof(int),0);
+            if(r<0){
+                perror("error envio");
+                exit(-1);
+            }
+            fclose(historia);
+
+        }
+        //recibe de cliente si se realizaron cambios en la historia
+        r=recv(clientfd,&respuesta,sizeof(int),0);
+        if(r<0){
+            perror("error recibir");
+            exit(-1);
+        }
+        if (respuesta==1){
+            //termina si no hay cambios nuevos
+            return 0;
+            printf("no existe archivo");
+        }
+        historia = fopen(comando,"w");
+        char info[1024];
+        int sz=0;
+        r= recv(clientfd,&sz,sizeof(int),0);
+        if(r<0){
+            perror("\n-->Error en recv info historia clinica");
+            exit(-1);
+        }
+        do{
+            memset(info,'\0',1024);
+            //recibe de cliente todos los caraceres de la historia para actualizarla
+            r= recv(clientfd,&info,sizeof(char)*sz,MSG_WAITALL);
+            if(r<0){
+                perror("\n-->Error en recv info historia clinica");
+                exit(-1);
+            }
+            fprintf(historia,"%s",info);
+            r= recv(clientfd,&sz,sizeof(int),0);
+            if(r<0){
+                perror("\n-->Error en recv info historia clinica");
+                exit(-1);
+            }
+        }while(sz>0);
+        fclose(historia);  
     }
 }
 
@@ -348,7 +521,7 @@ int Listar(int Hash){
     }    
     return 0;
 }
-int eliminar (int id)
+int eliminar (int id, int clientfd)
 {
     struct dogType buffer, deleted;
     int posdel=id;
@@ -484,6 +657,7 @@ int eliminar (int id)
     offset++;
     total--;
     int a=1;
+    //envio de la confirmacion de eliminacion al cliente
     r=send(clientfd,&a,sizeof(int),0);
     if(r < 0){
         perror("\n-->Error en send(): ");
@@ -491,12 +665,13 @@ int eliminar (int id)
     }
 }
 
-int Buscar(char nombre[32]){
+int Buscar(char nombre[32], int clientfd){
     int registros=0;
     //se genera la lista del hash del nombre y se verifica su existencia
     int con= Listar(PolyHash(nombre));
     if(con==1){
         printf("%s no existe \n",nombre);
+        r=send(clientfd,&registros,sizeof(int),0);
         return 0;
     }
     for(int i=0;i<=n;i++)
@@ -507,9 +682,6 @@ int Buscar(char nombre[32]){
             registros++;
         }        
     }
-    struct dogType *resultado;
-    resultado=malloc(sizeof(struct dogType)*registros);
-    registros=10;
     r=send(clientfd,&registros,sizeof(int),0);
     if(r < 0){
         perror("\n-->Error en send(): ");
@@ -521,20 +693,15 @@ int Buscar(char nombre[32]){
         //se imprimen los registros de la lista ecadenada cuyo nombre corresponda con el buscado 
         //y se contabilizan la cantidad de registros que coninciden
         if(strcoll(lista[i].nombre,nombre)==0){
-            resultado[registros++]=lista[i];
+            r=send(clientfd,&lista[i],sizeof(struct dogType),0);
+            if(r < 0){
+                perror("\n-->Error en send(): ");
+                exit(-1);
+            }
         }        
-    }
-    registros=10;
-    if(registros>0){
-        r=send(clientfd,resultado,registros*sizeof(struct dogType),0);
-        if(r < 0){
-            perror("\n-->Error en send(): ");
-            exit(-1);
-        }
     }
     // se libera la memoria de la lista
     free(lista);
-    free(resultado);
 }
 
 int PolyHash (char cadena[])
