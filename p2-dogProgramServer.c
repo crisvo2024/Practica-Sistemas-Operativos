@@ -45,14 +45,23 @@ int serverfd, r, opt = 1;
 struct sockaddr_in server, client;
 socklen_t tamano;
 pthread_t hilo[MAX_THREADS];
+pthread_t hiloControl;
 int numThreads;
+int state[MAX_THREADS];
 void sighandler(int signum);
 
 char fecha[64];
 
+struct datosH{
+    int clientfd;
+    int threadIndex;
+};
+
 int* atender(void *datos){
     //incicializacion de variables, archivos y el stream
-    int clientfd =*((int *)datos);
+    struct datosH *in;
+    in=(struct datosH*)datos;
+    int clientfd =in->clientfd;
     int opcion=0;
     time_t date=time(&date);
     struct tm timeInfo;
@@ -257,7 +266,8 @@ int* atender(void *datos){
                 break;
             }
         }while(buffer!=0);
-        
+        //marca el hilo como desocupado
+        state[in->threadIndex]=0;
         close(clientfd);
 
 }
@@ -290,6 +300,12 @@ int main(int argc, char const *argv[])
         perror("\n-->Error en Listen(): ");
         exit(-1);
     }
+    for (size_t i = 0; i < MAX_THREADS; i++)
+    {
+        state[i]=0;
+    }
+    
+
     //se añade la función signal para que se cierren los archivos en caso de interrupción del servidor
     signal(SIGINT,sighandler);
     int i=0;
@@ -300,8 +316,17 @@ int main(int argc, char const *argv[])
             perror("\n-->Error en accept: ");
             exit(-1);
         }
-        //verifica que no halla más de 32 clientes
-        if(i==MAX_THREADS){
+        //verifica que hilo esta desocupado
+        for (size_t h = 0; i < MAX_THREADS; i++)
+        {
+            if(state[h]==0){
+                i=h;
+                break;
+            }
+        }   
+        //si todos estan ocupados espera al primer hilo
+        if(state[i]==1){
+            i=1;
             int *rh0;
             pthread_join(hilo[i], (void **)&rh0);
             if(r != 0)
@@ -310,8 +335,13 @@ int main(int argc, char const *argv[])
                 exit(-1);
             }
         }     
+        //inicializa los datos para pasarle al hilo y lo marca como ocupado
+        struct datosH *datos=malloc(sizeof(struct datosH));
+        datos->clientfd=clientfd;
+        datos->threadIndex=i;
+        state[i]=1;
         //crea el hilo para atender al cliente  
-        r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)&clientfd);
+        r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)datos);
         if(r != 0)
         {
             perror("\n-->pthread_create error: ");
