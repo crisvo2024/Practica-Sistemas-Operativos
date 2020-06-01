@@ -33,7 +33,6 @@ struct hostent *he;
 int *buffer, *deleted;
 
 struct dogType *lista;
-int PolyHash (char cadena[]);
 int ingresar(char nombre[32],char tipo[32],int edad,char raza[16],int estatura,float peso, char sexo);
 int verRegistro();
 int eliminar();

@@ -460,8 +460,10 @@ int verRegistro(int id, int clientfd){
         if (respuesta==1){
             //termina si no hay cambios nuevos
             return 0;
-            printf("no existe archivo");
         }
+        sprintf(comando,"rm %d_server.txt",Nuevo.id);
+        system(comando);
+        sprintf(comando,"%d_server.txt",Nuevo.id);
         historia = fopen(comando,"w");
         char info[1024];
         int sz=0;
