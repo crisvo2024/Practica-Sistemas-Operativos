@@ -461,6 +461,7 @@ int verRegistro(int id, int clientfd){
             //termina si no hay cambios nuevos
             return 0;
         }
+        //se elimina el archivo anterior 
         sprintf(comando,"rm %d_server.txt",Nuevo.id);
         system(comando);
         sprintf(comando,"%d_server.txt",Nuevo.id);

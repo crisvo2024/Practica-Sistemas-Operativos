@@ -435,6 +435,12 @@ int eliminar ()
                 perror("\nError send() caso 2");
                 exit(EXIT_FAILURE);
             }
+            //recibe confirmacion del fin de la eliminacion
+            r=recv(clientfd,buffer,sizeof(int),0);
+            if(r<0){
+                perror("\n-->Error en recv() inicial");
+                exit(-1);
+            }
             break; 
         }
         if(desition=='n' && desition=='N'){
@@ -444,12 +450,7 @@ int eliminar ()
             printf("Operacion abortada \n");
         }
     }while(desition!='n' && desition!='N');
-    //recibe confirmacion del fin de la eliminacion
-    r=recv(clientfd,buffer,sizeof(int),0);
-    if(r<0){
-        perror("\n-->Error en recv() inicial");
-        exit(-1);
-    }
+    
     
 }
 
