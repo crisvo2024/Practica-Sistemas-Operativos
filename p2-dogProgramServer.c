@@ -35,7 +35,7 @@ int Listar(int Hash);
 int eliminar (int id, int clientefd);
 int Buscar(char nombre[32],int clientfd);
 int mygetch ( void );
-int verRegistro(int id, int clientefd);
+int verRegistro(int id, int clientefd, int confVer);
 FILE *myf,*tablaHash,*eliminados,*consultas;
 int n, tabla[1010],offset,total;
 struct dogType *lista;
@@ -169,7 +169,7 @@ int* atender(void *datos){
                     //el ciclo continua hasta que el cliente envie un id valido
                 }while(salir!=0);
                 //llamamos la funcion verRegistro con el id
-                verRegistro(id, clientfd);
+                verRegistro(id, clientfd,0);
                 //se registra la operacion en el log
                 consultas= fopen("serverDogs.log","a");
                 timeInfo=*localtime(&date);
@@ -226,7 +226,7 @@ int* atender(void *datos){
                     //el ciclo continua hasta que el cliente envie un id valido
                 }while(salir!=0);
                 //llamamos la funcion verRegistra para confirmar con el cliente
-                verRegistro(id, clientfd);
+                verRegistro(id, clientfd,1);
                 int conf;
                 //recibe de cliente la confirmacion de eliminacion
                 r=recv(clientfd,&conf,sizeof(int),0);
@@ -406,7 +406,7 @@ int ingresar(struct dogType Nuevo, int clientfd)
     total++;
     maxid=id;
 }
-int verRegistro(int id, int clientfd){
+int verRegistro(int id, int clientfd, int confver){
     struct dogType Nuevo;
     int buff;
     //viajar a la posicion id en el archivo si existe, sino a la posicion menos los eliminados
@@ -435,6 +435,7 @@ int verRegistro(int id, int clientfd){
         exit(-1);
     }
     //recibe de cliente el deseo de ver la historia clinica
+    if(confver==1)return 0;
     r=recv(clientfd,&buff,sizeof(int),0);
     if(r<0){
         perror("error recv() ");
@@ -491,9 +492,12 @@ int verRegistro(int id, int clientfd){
             //termina si no hay cambios nuevos
             return 0;
         }
-        //se elimina el archivo anterior 
-        sprintf(comando,"rm %d_server.txt",Nuevo.id);
-        system(comando);
+        //se elimina el archivo anterior si ya existia
+        if(historia!=NULL){
+            sprintf(comando,"rm %d_server.txt",Nuevo.id);
+            system(comando);
+        }
+        
         sprintf(comando,"%d_server.txt",Nuevo.id);
         historia = fopen(comando,"w");
         char info[1024];

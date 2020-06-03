@@ -436,7 +436,7 @@ int eliminar ()
                 exit(EXIT_FAILURE);
             }
             //recibe confirmacion del fin de la eliminacion
-            r=recv(clientfd,buffer,sizeof(int),0);
+            r=recv(clientfd,buffer,sizeof(int),MSG_WAITALL);
             if(r<0){
                 perror("\n-->Error en recv() inicial");
                 exit(-1);
