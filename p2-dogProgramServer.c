@@ -113,17 +113,11 @@ int* atender(void *datos){
                 }
                 //llamamos la funcion ingresar con la estructura n
                 ingresar(n, clientfd);
-                //escritura de la operacion en el log
-                consultas= fopen("serverDogs.log","a");
-                timeInfo=*localtime(&date);
-                fprintf(consultas,"\n[ fecha: %d-%d-%d %2d:%2d:%2d ]",timeInfo.tm_year +1900,timeInfo.tm_mon+1,timeInfo.tm_mday,timeInfo.tm_hour,timeInfo.tm_min,timeInfo.tm_sec);
-                fprintf(consultas,"[ cliente 127.0.0.1 ]");
-                fprintf(consultas,"Insercion");
-                fprintf(consultas,"registro: %d\n",n.id);
-                fclose(consultas); 
                 break;
             case 2:
                 //verificacion de cantidad de registros eliminados
+                offset=-1;
+                fseek(eliminados,0,SEEK_SET);
                 while(!feof(eliminados))
                 {
                     fread(&deleted,sizeof(int),1,eliminados);
@@ -181,6 +175,8 @@ int* atender(void *datos){
                 break;
             case 3:
                 //verificacion de cantidad de registros eliminados
+                offset=-1;
+                fseek(eliminados,0,SEEK_SET);
                 while(!feof(eliminados))
                 {
                     fread(&deleted,sizeof(int),1,eliminados);
@@ -340,13 +336,14 @@ int main(int argc, char const *argv[])
         datos->clientfd=clientfd;
         datos->threadIndex=i;
         state[i]=1;
+        atender((void *)datos);
         //crea el hilo para atender al cliente  
-        r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)datos);
+        /*r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)datos);
         if(r != 0)
         {
             perror("\n-->pthread_create error: ");
             exit(-1);
-        }  
+        }  */
     }
     return 0;
 }
@@ -405,6 +402,16 @@ int ingresar(struct dogType Nuevo, int clientfd)
     }
     total++;
     maxid=id;
+    //escritura de la operacion en el log
+    time_t date=time(&date);
+    struct tm timeInfo;
+    consultas= fopen("serverDogs.log","a");
+    timeInfo=*localtime(&date);
+    fprintf(consultas,"\n[ fecha: %d-%d-%d %2d:%2d:%2d ]",timeInfo.tm_year +1900,timeInfo.tm_mon+1,timeInfo.tm_mday,timeInfo.tm_hour,timeInfo.tm_min,timeInfo.tm_sec);
+    fprintf(consultas,"[ cliente 127.0.0.1 ]");
+    fprintf(consultas,"Insercion");
+    fprintf(consultas,"registro: %d]\n",Nuevo.id);
+    fclose(consultas); 
 }
 int verRegistro(int id, int clientfd, int confver){
     struct dogType Nuevo;
@@ -626,7 +633,7 @@ int eliminar (int id, int clientfd)
     //se habre la copia del archivo
     FILE *New= fopen("dataDogs1.dat","rb+");
     //ir a la posicion del id del eliminado en el en datadogs y en su copia, o al ultimo registro si el id es mayor a la cantidad de registros
-    if(id>total){
+    if(id>=total){
         fseek(myf,-sizeof(struct dogType),SEEK_END);
         fseek(New,-sizeof(struct dogType),SEEK_END);
         posdel=total-1;
