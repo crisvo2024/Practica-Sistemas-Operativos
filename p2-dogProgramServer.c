@@ -371,7 +371,7 @@ int ingresar(struct dogType Nuevo, int clientfd)
         fread(&deleted,sizeof(int),1,eliminados);
         if(deleted==id){
             id++;
-            break;
+            fseek(eliminados,0,SEEK_SET);
         }
     }
     Nuevo.id=id;
