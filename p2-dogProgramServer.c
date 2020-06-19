@@ -336,14 +336,13 @@ int main(int argc, char const *argv[])
         datos->clientfd=clientfd;
         datos->threadIndex=i;
         state[i]=1;
-        atender((void *)datos);
         //crea el hilo para atender al cliente  
-        /*r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)datos);
+        r=pthread_create(&hilo[i++],NULL,(void *)atender,(void *)datos);
         if(r != 0)
         {
             perror("\n-->pthread_create error: ");
             exit(-1);
-        }  */
+        }  
     }
     return 0;
 }
