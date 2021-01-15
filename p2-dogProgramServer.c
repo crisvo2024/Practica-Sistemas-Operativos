@@ -68,6 +68,12 @@ int* atender(void *datos){
     myf = fopen("dataDogs.dat","rb+");
     tablaHash = fopen("TablaHash.dat","rb+");
     eliminados = fopen("Eliminados.dat","rb+");
+    if(eliminados == NULL)
+    {
+        eliminados = fopen("Eliminados.dat","w+");
+        consultas = fopen("serverDogs.log","w");
+        fclose(consultas);
+    }
     
     int deleted, id;
     int salir=0;
